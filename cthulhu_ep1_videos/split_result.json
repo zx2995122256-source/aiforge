@@ -1,0 +1,633 @@
+{
+  "assets": [
+    {
+      "name": "若昂_德_奥利维拉",
+      "type": "角色",
+      "prompt": "Split composition character reference board, left side extreme close-up portrait, right side three-view turnaround (front/90/side/back), full body standing, clean professional layout. Left: ultra detailed front face close-up, square jaw, thick dark brows, deep-set brown eyes, weathered tan skin, short black beard flecked with grey, hair tied back with leather cord, visible skin pores and sun damage, subtle subsurface scattering, natural skin imperfections (not plastic smooth). Right: front view (head completely removed, neck-down only, no face shown), side view (with head), back view (with head), wearing dark brown wool captain's coat with brass buttons, white linen shirt, leather boots, broad shoulders, calloused hands, upright posture, consistent lighting and material quality across all views, pure white background. Bottom: clean white horizontal bar with bold black Chinese text \"若昂·德·奥利维拉 Age 42 Character Reference\". Overall: 35mm film, Kodak Vision3 500T, vertical, high resolution textures, not blurry, not plastic smooth.",
+      "is_primary": true
+    },
+    {
+      "name": "塞巴斯蒂昂",
+      "type": "角色",
+      "prompt": "Split composition character reference board, left side extreme close-up portrait, right side three-view turnaround (front/90/side/back), full body standing, clean professional layout. Left: ultra detailed front face close-up, narrow face, thin arched eyebrows, sharp grey eyes, pale skin, clean-shaven, brown hair cropped short, faint scar across left cheek, visible skin pores and subtle wrinkles, natural imperfections. Right: front view (head removed, neck-down only), side view (with head), back view (with head), wearing dark blue wool coat with brass buttons, white cravat, leather boots, lean build, long fingers, tense posture, consistent lighting, pure white background. Bottom: clean white horizontal bar with bold black Chinese text \"塞巴斯蒂昂 Age 35 Character Reference\". Overall: 35mm film, Kodak Vision3 500T, vertical, high resolution textures, not blurry, not plastic smooth.",
+      "is_primary": true
+    },
+    {
+      "name": "安东尼奥",
+      "type": "角色",
+      "prompt": "Split composition character reference board, left side extreme close-up portrait, right side three-view turnaround (front/90/side/back), full body standing, clean professional layout. Left: ultra detailed front face close-up, round face, heavy brows, hollow grey eyes, sallow skin, shaved head with tonsure, deep lines on forehead, lips constantly moving in silent prayer, visible pores and skin texture. Right: front view (head removed, neck-down only), side view (with head), back view (with head), wearing black Franciscan habit with rope belt, wooden cross on chest, stooped posture, soft hands, consistent lighting, pure white background. Bottom: clean white horizontal bar with bold black Chinese text \"安东尼奥 Age 56 Character Reference\". Overall: 35mm film, Kodak Vision3 500T, vertical, high resolution textures, not blurry, not plastic smooth.",
+      "is_primary": true
+    },
+    {
+      "name": "佩德罗",
+      "type": "角色",
+      "prompt": "Split composition character reference board, left side extreme close-up portrait, right side three-view turnaround (front/90/side/back), full body standing, clean professional layout. Left: ultra detailed front face close-up, broad face, thick nose, dark eyes, sunburned skin, unkempt black hair, missing front tooth, scarred hands visible, natural imperfections. Right: front view (head removed, neck-down only), side view (with head), back view (with head), wearing dirty white sailor's shirt, brown vest, canvas trousers, barefoot, muscular build, consistent lighting, pure white background. Bottom: clean white horizontal bar with bold black Chinese text \"佩德罗 Age 28 Character Reference\". Overall: 35mm film, Kodak Vision3 500T, vertical, high resolution textures, not blurry, not plastic smooth.",
+      "is_primary": true
+    },
+    {
+      "name": "圣卡塔琳娜号_甲板",
+      "type": "场景",
+      "prompt": "A 17th century Portuguese merchant ship deck at night, calm sea under starlight, no moon. Deck wood weathered grey, rigging ropes coiled, lanterns hanging from masts casting dim orange pools. Wide establishing shot, photorealistic, 1623 Caribbean, damp wood, brass details on wheel, stacked barrels. No modern elements."
+    },
+    {
+      "name": "黑色岛屿_海岸",
+      "type": "场景",
+      "prompt": "A black volcanic coastline with towering hexagonal basalt columns rising from the sea like ribs. Midday, overcast sky, grey light. Moss and salt spray on rock surfaces. Small sandy beach at base of columns. Wide establishing shot, photorealistic, alien landscape, oppressive atmosphere. No modern elements."
+    },
+    {
+      "name": "岩壁_石门",
+      "type": "场景",
+      "prompt": "A hidden stone door carved into the cliff face, revealed by receding tide. Door covered with ancient bas-reliefs, central symbol of a giant eye with tentacle pupil. Semi-open, emitting dim blue-green light from within. Wet rocks, seaweed, evening darkness closing in. Wide shot, photorealistic, 17th century, no modern elements."
+    },
+    {
+      "name": "石门_通道",
+      "type": "场景",
+      "prompt": "Narrow organic tunnel, walls covered with pulsating fleshy substance like skin and mycelium, glowing faintly. Damp, fishy sulfur smell implied by visual. Torchlight flickering, shadows dancing. Claustrophobic, narrowing toward end. Medium establishing shot, photorealistic, no modern elements."
+    },
+    {
+      "name": "地下_穹顶",
+      "type": "场景",
+      "prompt": "Vast underground cavern with a central floating black sphere 3 meters diameter, surface churning with purple veins like a living heart. Hundreds of tentacle vines hanging from ceiling, glowing blue-green tips. Walls covered with glowing symbols. Dim eerie light. Wide establishing shot, photorealistic, otherworldly, no modern elements."
+    },
+    {
+      "name": "海面_小艇",
+      "type": "场景",
+      "prompt": "Open sea at dawn, grey waves, a small rowboat tossed among swells. Distant smoke on horizon. Overcast sky, cold light. Wide establishing shot, photorealistic, 17th century, desperate atmosphere. No modern elements."
+    },
+    {
+      "name": "航海日志",
+      "type": "道具",
+      "prompt": "A leather-bound ship logbook, 20cm x 30cm, brown worn leather, yellowed pages, open to last entry. Handwritten text in fading ink: \"It saw me.\" Photorealistic product shot, soft studio lighting, clean neutral background. Visible paper texture, ink bleed, frayed edges."
+    },
+    {
+      "name": "火枪",
+      "type": "道具",
+      "prompt": "A 17th century Portuguese matchlock musket, steel barrel, wooden stock, brass fittings. Approximately 1.5m long. Worn from use. Photorealistic product shot, soft studio lighting, clean neutral background."
+    },
+    {
+      "name": "灯笼",
+      "type": "道具",
+      "prompt": "A brass ship lantern with glass panes, candle flame visible through soot. Hand-held or hanging. Soft warm light. Photorealistic product shot, soft studio lighting, clean neutral background."
+    },
+    {
+      "name": "典籍",
+      "type": "道具",
+      "prompt": "An ancient forbidden book, dark brown leather cover with brass clasps, pages frayed. Open to a page with a drawing of the Eye symbol. Blue-green phosphorescent ink glow. Photorealistic product shot, soft studio lighting, clean neutral background."
+    },
+    {
+      "name": "球体",
+      "type": "道具",
+      "prompt": "A 3-meter diameter black sphere floating in mid-air, surface churning with dark purple vein-like patterns. Tentacle-like appendages hanging from it, bioluminescent blue-green at tips. Organic, pulsating like a heart. Photorealistic product shot, dark background with faint ambient light."
+    },
+    {
+      "name": "小艇",
+      "type": "道具",
+      "prompt": "A small wooden rowboat, roughly 4m long, weathered wood, oars inside. Partially submerged in water. Photorealistic product shot, soft studio lighting, clean neutral background."
+    }
+  ],
+  "segments": [
+    {
+      "id": 1,
+      "title": "开头钩子与航行",
+      "assets": [
+        "若昂_德_奥利维拉",
+        "圣卡塔琳娜号_甲板",
+        "航海日志"
+      ],
+      "shots": [
+        {
+          "time": "0s—2.5s",
+          "type": "ECU",
+          "camera": "locked-off, slow push",
+          "visual": "Extreme close-up of the ship log book, last page. Handwritten ink fades at the end. The words 'It saw me' in Portuguese script. A drop of water falls on the page, blurring ink.",
+          "lighting": "Dim candlelight, warm 2700K, flickering shadows",
+          "dialogue": "",
+          "audio": "Faint creak of ship timbers, dripping water",
+          "transition": "[cut]"
+        },
+        {
+          "time": "2.5s—5.0s",
+          "type": "MS",
+          "camera": "handheld micro-shake",
+          "visual": "Wide shot of the ship deck at night. Starry sky, no moon. Captain João stands at the bow, telescope raised. Three sailors work ropes in background. Ship rolls gently.",
+          "lighting": "Only starlight and a dim lantern on mast, cool moonlight",
+          "dialogue": "",
+          "audio": "Wind in rigging, distant waves",
+          "transition": "[cut]"
+        },
+        {
+          "time": "5.0s—7.5s",
+          "type": "CU",
+          "camera": "slow dolly-in on João's face",
+          "visual": "João's weathered face, eyes fixed forward through telescope. His expression shifts from curiosity to unease. The telescope lowers slightly.",
+          "lighting": "Side light from lantern on left, half face in shadow",
+          "dialogue": "",
+          "audio": "Heartbeat-like low rumble begins subconsciously",
+          "transition": "[cut]"
+        },
+        {
+          "time": "7.5s—10.0s",
+          "type": "WS",
+          "camera": "tilt up from deck to horizon",
+          "visual": "The horizon reveals a dark irregular shape—a black island, five-pointed, rising from sea where no land should be. Basalt columns jagged against sky.",
+          "lighting": "Pre-dawn grey light, low contrast",
+          "dialogue": "João: 'There. No chart shows it.'",
+          "audio": "Gull cries (unseen), rigging rope strain",
+          "transition": "[end]"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "登陆黑色岛屿",
+      "assets": [
+        "若昂_德_奥利维拉",
+        "塞巴斯蒂昂",
+        "黑色岛屿_海岸",
+        "灯笼"
+      ],
+      "shots": [
+        {
+          "time": "0s—2.0s",
+          "type": "MS",
+          "camera": "handheld, low angle from rowboat",
+          "visual": "Small rowboat approaches the black basalt columns. João stands at bow, hand on sword. Sebastião rows, glancing up at towering rock face. Waves lap against columns.",
+          "lighting": "Overcast daylight, flat, cool 5600K",
+          "dialogue": "Sebastião: 'Captain, this place is cursed. Turn back.' João: 'We need water.'",
+          "audio": "Oars splashing, distant breathing echo",
+          "transition": "[cut]"
+        },
+        {
+          "time": "2.0s—4.0s",
+          "type": "CU",
+          "camera": "tracking right with rowboat",
+          "visual": "Close-up on the basalt column surface—covered in strange glowing symbols, pale blue-green. Symbols pulse faintly as if alive. João's hand touches one, then flinches back.",
+          "lighting": "Symbols self-illuminated, dim ambient",
+          "dialogue": "",
+          "audio": "Low hum, like distant chanting",
+          "transition": "[cut]"
+        },
+        {
+          "time": "4.0s—6.5s",
+          "type": "MS",
+          "camera": "pan left to follow",
+          "visual": "Boat beaches on narrow sand. Sailors jump out, tie ropes. João steps onto shore, looks around. He pulls out his pistol and walks toward the rock face.",
+          "lighting": "Overcast, no direct shadows, oppressive",
+          "dialogue": "",
+          "audio": "Grit under boots, dripping from oars",
+          "transition": "[cut]"
+        },
+        {
+          "time": "6.5s—10.0s",
+          "type": "WS",
+          "camera": "wide establishing tilt up",
+          "visual": "The island looms above them. Massive hexagonal basalt columns stretch into low clouds. Symbols glimmer faintly on every surface. The men look tiny against the vast alien architecture.",
+          "lighting": "Diffuse grey light, no shadows",
+          "dialogue": "",
+          "audio": "Wind howls through columns, a single bird far away",
+          "transition": "[end]"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "修道士的发现",
+      "assets": [
+        "安东尼奥",
+        "黑色岛屿_海岸",
+        "典籍",
+        "若昂_德_奥利维拉",
+        "塞巴斯蒂昂"
+      ],
+      "shots": [
+        {
+          "time": "0s—2.5s",
+          "type": "CU",
+          "camera": "handheld micro-shake",
+          "visual": "Friar Antonio kneeling on wet sand, beads clutched in trembling hands. His eyes are closed, lips moving in prayer. Suddenly he stops, head tilts as if listening to something underground.",
+          "lighting": "Cool top light from overcast sky, low contrast",
+          "dialogue": "Antonio: (whispering) 'The stones... they speak...'",
+          "audio": "Low rumbling sub-bass vibration",
+          "transition": "[cut]"
+        },
+        {
+          "time": "2.5s—5.0s",
+          "type": "ECU",
+          "camera": "slow push in to open book",
+          "visual": "Antonio's hands flipping pages of an ancient book. He stops at a page with a drawing: a giant eye with tentacles radiating from pupil. Symbols match those on the rocks.",
+          "lighting": "Book illuminated by dim sky, faint phosphorescent glow from symbols on page",
+          "dialogue": "",
+          "audio": "Page rustle, Antonio's rapid breath",
+          "transition": "[cut]"
+        },
+        {
+          "time": "5.0s—7.5s",
+          "type": "MCU",
+          "camera": "handheld, over Antonio's shoulder",
+          "visual": "João and Sebastião come up behind Antonio. João looks at the book, then up at the symbols on the cliff. His face hardens.",
+          "lighting": "Single direction from sea, faces half-lit",
+          "dialogue": "João: 'What is that symbol?' Antonio: 'The Eye of the Abyss. An old god, erased by the Church.'",
+          "audio": "Wind, distant splash",
+          "transition": "[cut]"
+        },
+        {
+          "time": "7.5s—10.0s",
+          "type": "WS",
+          "camera": "tilt up from book to cliff",
+          "visual": "The camera rises from the open book to the towering rock face covered in glowing Eye symbols. The symbols are now pulsing more rapidly, synchronized with a low throbbing sound.",
+          "lighting": "Symbols brighten, casting eerie blue-green light on the scene",
+          "dialogue": "",
+          "audio": "Throbbing bass grows louder, heartbeat-like",
+          "transition": "[end]"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "石门出现",
+      "assets": [
+        "若昂_德_奥利维拉",
+        "塞巴斯蒂昂",
+        "安东尼奥",
+        "岩壁_石门",
+        "灯笼"
+      ],
+      "shots": [
+        {
+          "time": "0s—2.0s",
+          "type": "WS",
+          "camera": "static, wide",
+          "visual": "Evening. Tides recede revealing the base of the cliff. A stone door emerges from foam—black stone carved with the Eye symbol. Partially open, blue-green light leaks from the gap.",
+          "lighting": "Twilight, fading natural light, interior glow warm 2700K mixed with eerie cool",
+          "dialogue": "",
+          "audio": "Tide sucking back, stone grating",
+          "transition": "[cut]"
+        },
+        {
+          "time": "2.0s—4.5s",
+          "type": "MCU",
+          "camera": "handheld, push in",
+          "visual": "João approaches the door, lantern held high. He studies the carving: a giant eye with a vortex of tentacles in the pupil. His reflection in the wet stone seems to move independently.",
+          "lighting": "Lantern light on face, side warm key, cool rim from interior",
+          "dialogue": "",
+          "audio": "Dripping, echoing from behind door",
+          "transition": "[cut]"
+        },
+        {
+          "time": "4.5s—7.0s",
+          "type": "MS",
+          "camera": "over João's shoulder",
+          "visual": "Sebastião and Antonio behind him. Sebastião draws his sword, Antonio crosses himself. João pushes the door wider; the light intensifies. A sulfurous breeze hits them.",
+          "lighting": "Doorway light casts long shadows toward camera",
+          "dialogue": "Sebastião: 'Captain, no.' João: 'I will see what is inside.'",
+          "audio": "Wind tunnel sound, low drone",
+          "transition": "[cut]"
+        },
+        {
+          "time": "7.0s—10.0s",
+          "type": "WS",
+          "camera": "tracking forward into door",
+          "visual": "João steps through the doorway into the tunnel, lantern raised. The camera follows, revealing organic walls glowing faintly. The door behind him starts to close slowly—unseen hands?",
+          "lighting": "Ambient organic glow + lantern, warm and cold mixed",
+          "dialogue": "",
+          "audio": "Stone scraping behind, wet squelching ahead",
+          "transition": "[end]"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "有机通道",
+      "assets": [
+        "若昂_德_奥利维拉",
+        "塞巴斯蒂昂",
+        "安东尼奥",
+        "石门_通道",
+        "灯笼"
+      ],
+      "shots": [
+        {
+          "time": "0s—2.5s",
+          "type": "CU",
+          "camera": "handheld micro-shake",
+          "visual": "Close-up of the tunnel wall—pulsing, fleshy substance like skin woven with mycelium. It contracts as if breathing. João's hand passes close; it recoils slightly.",
+          "lighting": "Bioluminescent blue-green glow from wall, dim",
+          "dialogue": "",
+          "audio": "Wet pulse, slow squelching",
+          "transition": "[cut]"
+        },
+        {
+          "time": "2.5s—5.0s",
+          "type": "MS",
+          "camera": "tracking backward, facing forward",
+          "visual": "João, Sebastião, Antonio and two sailors move cautiously. Their lanterns flicker. One by one, lanterns die—first one sailor's, then another's. Darkness closes in.",
+          "lighting": "Losing light, becoming almost total darkness except wall glow",
+          "dialogue": "Sailor: 'My lantern—it's gone out!' Another: 'Mine too!'",
+          "audio": "Panic breaths, footsteps on organic matter",
+          "transition": "[cut]"
+        },
+        {
+          "time": "5.0s—7.5s",
+          "type": "ECU",
+          "camera": "locked-off",
+          "visual": "In near darkness, only wall glow reveals João's face. His pupils are dilated, reflecting faint blue-green. He whispers something, lips moving.",
+          "lighting": "Extreme low light, wall glow on face only",
+          "dialogue": "João: (whisper) 'The darkness is alive.'",
+          "audio": "Distant low hum, as if responding",
+          "transition": "[cut]"
+        },
+        {
+          "time": "7.5s—10.0s",
+          "type": "WS",
+          "camera": "slow push forward",
+          "visual": "The tunnel opens into a vast space. In the distance, a faint glow reveals a floating sphere. Tentacles hang from ceiling. The scale is immense.",
+          "lighting": "Soft cool light from sphere, illuminating space",
+          "dialogue": "",
+          "audio": "Reverberating drips, deep organ-like note",
+          "transition": "[end]"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "地底穹顶与球体",
+      "assets": [
+        "若昂_德_奥利维拉",
+        "塞巴斯蒂昂",
+        "安东尼奥",
+        "佩德罗",
+        "地下_穹顶",
+        "球体"
+      ],
+      "shots": [
+        {
+          "time": "0s—2.0s",
+          "type": "WS",
+          "camera": "pan right, slow reveal",
+          "visual": "The full underground dome revealed. Central sphere, 3m diameter, surface churning with dark purple veins, floating mid-air. Hundreds of tentacles hang from ceiling, tips glowing blue-green. Walls covered in glowing symbols.",
+          "lighting": "Sphere self-light, cool 5000K, creating deep shadows",
+          "dialogue": "",
+          "audio": "Low thrumming, like a giant engine",
+          "transition": "[cut]"
+        },
+        {
+          "time": "2.0s—4.0s",
+          "type": "CU",
+          "camera": "handheld, slow dolly",
+          "visual": "Antonio steps forward, book in hand. He compares the symbols on the wall to the book—they match exactly. His face shows terror and awe. A tentacle near him twitches.",
+          "lighting": "Glow from symbols and sphere, mixed on face",
+          "dialogue": "Antonio: 'The Abyssal Eye... we must not be here.'",
+          "audio": "Thrumming intensifies, a whisper joins",
+          "transition": "[cut]"
+        },
+        {
+          "time": "4.0s—6.5s",
+          "type": "MS",
+          "camera": "over shoulder, João facing sphere",
+          "visual": "João draws his pistol and aims at the sphere. Sebastião grabs his arm. The sphere's purple veins pulse faster, reacting to their presence.",
+          "lighting": "Sphere light creates backlight on men, faces dark",
+          "dialogue": "Sebastião: 'Don't provoke it!' João: 'We must destroy it.'",
+          "audio": "Veins pulsing like heartbeat, rising",
+          "transition": "[cut]"
+        },
+        {
+          "time": "6.5s—10.0s",
+          "type": "ECU",
+          "camera": "locked-off, slow push",
+          "visual": "The sphere's surface suddenly smooths. Across it, a face forms—the face of Pedro, but distorted, eyes black holes. The mouth opens wide, emitting a silent scream. The tentacles around the sphere begin to move with purpose.",
+          "lighting": "Face on sphere self-luminous, cold blue-white",
+          "dialogue": "",
+          "audio": "Ear-splitting sub-bass shriek, then silence",
+          "transition": "[end]"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "触须攻击",
+      "assets": [
+        "若昂_德_奥利维拉",
+        "塞巴斯蒂昂",
+        "安东尼奥",
+        "佩德罗",
+        "地下_穹顶",
+        "球体",
+        "火枪"
+      ],
+      "shots": [
+        {
+          "time": "0s—1.5s",
+          "type": "MS",
+          "camera": "handheld twitch",
+          "visual": "A tentacle shoots from the sphere toward sailor Pedro. It pierces his chest without blood. Pedro's body contorts, bones cracking audibly. His skin writhes as something moves underneath.",
+          "lighting": "Sphere light harsh on scene, shadows sharp",
+          "dialogue": "Pedro: (guttural groan) 'Aaaaagh—'",
+          "audio": "Bone snap, wet tearing",
+          "transition": "[cut]"
+        },
+        {
+          "time": "1.5s—3.5s",
+          "type": "ECU",
+          "camera": "locked-off",
+          "visual": "Pedro's face—eyes bulging, mouth stretched open, but instead of a scream, a low vibrating hum identical to the underground murmur emanates from his throat. His pupils roll back, then snap forward—now black, no iris.",
+          "lighting": "Symbols on wall casting blue-green on his skin",
+          "dialogue": "",
+          "audio": "Low vibrating hum (Pedro's voice)",
+          "transition": "[cut]"
+        },
+        {
+          "time": "3.5s—6.0s",
+          "type": "MS",
+          "camera": "handheld, Joao spins",
+          "visual": "João fires his pistol at the sphere. The bullet hits the surface and vanishes absorbed without effect. The tentacles retract, then more shoot out toward two other sailors. They are wrapped and lifted, bodies dissolving into blue-green particles absorbed by the sphere.",
+          "lighting": "Muzzle flash illuminates cave briefly, then return to eerie glow",
+          "dialogue": "João: 'No!' (gunfire)",
+          "audio": "Gunshot echoes, wet absorption, sailor screams cut short",
+          "transition": "[cut]"
+        },
+        {
+          "time": "6.0s—8.5s",
+          "type": "WS",
+          "camera": "wide, panicking",
+          "visual": "The sphere pulses faster, whole dome vibrating. More tentacles descend, whipping. Sailors run toward exit. Sebastião grabs João's arm, pulls him back. The sphere surface now shows Pedro's face again, mouthing silently.",
+          "lighting": "Strobe-like pulsing from sphere, disorienting",
+          "dialogue": "Sebastião: 'Captain! We must flee!'",
+          "audio": "Vibration rattles stone, deep howl",
+          "transition": "[cut]"
+        },
+        {
+          "time": "8.5s—10.0s",
+          "type": "ECU",
+          "camera": "slow push on Joao's face",
+          "visual": "João takes one last look at the sphere—it forms Pedro's face, then shifts to his own face, distorted. His eyes widen in horror. He turns and runs toward the tunnel.",
+          "lighting": "Sphere light fades as he turns, shadow consuming his face",
+          "dialogue": "",
+          "audio": "His own panicked breath, cave roar",
+          "transition": "[end]"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "逃出石门",
+      "assets": [
+        "若昂_德_奥利维拉",
+        "塞巴斯蒂昂",
+        "安东尼奥",
+        "岩壁_石门",
+        "石门_通道",
+        "灯笼"
+      ],
+      "shots": [
+        {
+          "time": "0s—2.0s",
+          "type": "MS",
+          "camera": "handheld track backward",
+          "visual": "Survivors burst out of the stone door into the night. They stumble onto wet sand, gasping. João looks back—the door is slowly closing, as if by itself. The Eye symbol on it glows faintly.",
+          "lighting": "Night, starlight, weak, door glow faint blue-green",
+          "dialogue": "Panting, coughing",
+          "audio": "Heavy breathing, door grinding shut",
+          "transition": "[cut]"
+        },
+        {
+          "time": "2.0s—4.5s",
+          "type": "WS",
+          "camera": "tilt up from ground to door",
+          "visual": "The stone door fully closes, merging seamlessly with the cliff. No trace remains except a slight vibration in the rock. The Eye symbol fades. The survivors stand in darkness, terrified.",
+          "lighting": "Only starlight, very dim",
+          "dialogue": "Antonio: 'We must leave this island. Now.'",
+          "audio": "Ocean waves, distant rumble",
+          "transition": "[cut]"
+        },
+        {
+          "time": "4.5s—7.0s",
+          "type": "MS",
+          "camera": "pan right as they hurry",
+          "visual": "The group rushes to the rowboat, shoving off into the water. João, Sebastião, Antonio and two remaining sailors row frantically. The island behind them looms silent.",
+          "lighting": "Moon breaks through clouds, silver light on sea",
+          "dialogue": "",
+          "audio": "Oars splashing, panting, boat creaking",
+          "transition": "[cut]"
+        },
+        {
+          "time": "7.0s—10.0s",
+          "type": "WS",
+          "camera": "static, wide",
+          "visual": "As they row away, the camera watches the black island recede. Suddenly, a massive shape moves beneath the water—a huge dark bulk passes under the boat, setting it rocking violently. Whatever it is, it's beyond the island itself.",
+          "lighting": "Moonlight glints on moving water, dark shape",
+          "dialogue": "",
+          "audio": "Deep underwater groan, water displacement",
+          "transition": "[end]"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "title": "船体菌丝与火攻",
+      "assets": [
+        "若昂_德_奥利维拉",
+        "塞巴斯蒂昂",
+        "安东尼奥",
+        "圣卡塔琳娜号_甲板",
+        "火枪"
+      ],
+      "shots": [
+        {
+          "time": "0s—2.5s",
+          "type": "MS",
+          "camera": "handheld, push in",
+          "visual": "They climb aboard the Santa Catarina. The deck is covered in creeping organic substance—mycelium-like filaments crawling up masts and sails. The ship is being consumed.",
+          "lighting": "Dawn light, grey, sickly",
+          "dialogue": "Sebastião: 'My God... it's spreading.'",
+          "audio": "Crackling of organic growth, wood groaning",
+          "transition": "[cut]"
+        },
+        {
+          "time": "2.5s—5.0s",
+          "type": "CU",
+          "camera": "tilt down",
+          "visual": "Close-up of the organic matter on the ship's rail—it pulses with the same rhythm as the sphere. João draws his pistol, but then stops, realizing firearms are useless. He stares at the growing infection.",
+          "lighting": "Dawn light, low contrast",
+          "dialogue": "João: 'There's only one way to stop it.'",
+          "audio": "Pulse of the growth, slow wet sounds",
+          "transition": "[cut]"
+        },
+        {
+          "time": "5.0s—7.5s",
+          "type": "MCU",
+          "camera": "handheld, Sebastian and Joao face off",
+          "visual": "João tells Sebastião to take survivors in the longboat. He will stay and ignite the powder magazine. Sebastião protests, but João is resolute.",
+          "lighting": "Horizon brightening, faces in shadow against dark ship",
+          "dialogue": "João: 'I will light the powder. Go.' Sebastião: 'You'll die!' João: 'Perhaps. Go.'",
+          "audio": "Crying gulls, organic crackling in background",
+          "transition": "[cut]"
+        },
+        {
+          "time": "7.5s—10.0s",
+          "type": "WS",
+          "camera": "wide, as boat lowers",
+          "visual": "The longboat lowers into the water with Sebastião, Antonio and two others. João stands alone on the deck, torch in hand. He watches them row away, then walks toward the cargo hatch. The organic matter crawls toward him.",
+          "lighting": "Rising sun silhouettes ship, orange glow",
+          "dialogue": "",
+          "audio": "Rope creaking, waves, distant explosion anticipation",
+          "transition": "[end]"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "title": "爆炸与结尾钩子",
+      "assets": [
+        "若昂_德_奥利维拉",
+        "塞巴斯蒂昂",
+        "安东尼奥",
+        "圣卡塔琳娜号_甲板",
+        "海面_小艇",
+        "小艇",
+        "航海日志"
+      ],
+      "shots": [
+        {
+          "time": "0s—2.5s",
+          "type": "WS",
+          "camera": "static, from longboat",
+          "visual": "The Santa Catarina explodes in a massive fireball. Debris flies into the dawn sky. The shockwave reaches the longboat, rocking it violently. Sebastião shields his eyes.",
+          "lighting": "Fireball orange-white, overexposed, then smoke",
+          "dialogue": "",
+          "audio": "Massive explosion roar, debris splashing",
+          "transition": "[cut]"
+        },
+        {
+          "time": "2.5s—5.0s",
+          "type": "MS",
+          "camera": "handheld, Sebastian staring",
+          "visual": "As the smoke clears, Sebastião looks back. Through the haze, a massive shape rises from the sea—much larger than the island—a bulbous black mass with tentacles reaching for the sky, blocking the sun. The 'island' was just its back.",
+          "lighting": "Shape eclipses sun, silhouette against bright sky",
+          "dialogue": "Antonio: 'It is not an island... it is a creature.'",
+          "audio": "Deep rumbling, water cascading off the rising mass",
+          "transition": "[cut]"
+        },
+        {
+          "time": "5.0s—7.5s",
+          "type": "WS",
+          "camera": "slow zoom on floating hat",
+          "visual": "The longboat drifts. Floating on the water is João's hat. As it turns, João's face appears beneath the water, eyes now glowing with the Eye symbol—pupil replaced by tentacle vortex. He smiles an inhuman smile, then sinks.",
+          "lighting": "Underwater green-blue glow, surface ripples",
+          "dialogue": "",
+          "audio": "Low chanting whisper: 'You will return too.'",
+          "transition": "[cut]"
+        },
+        {
+          "time": "7.5s—10.0s",
+          "type": "ECU",
+          "camera": "locked-off",
+          "visual": "The logbook lies open in the bottom of the longboat. The last page now has fresh ink writing: 'You will return too.' The ink spreads, forming the Eye symbol. The camera stays on the page as the whispering fades.",
+          "lighting": "Daylight, soft, on page",
+          "dialogue": "",
+          "audio": "Whispering fades to silence, then distant seabird",
+          "transition": "[end]"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+[Unit]
+Description=AiForge Backend
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/aiforge/backend
+Environment=AIFORGE_FRONTEND_DIR=/home/ubuntu/aiforge/dist
+Environment=AIFORGE_NOTIFY_KEY=aiforge2025
+Environment=AIFORGE_WECHAT_QR=
+ExecStart=/usr/bin/python3 -m uvicorn main:app --host 0.0.0.0 --port 7862
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

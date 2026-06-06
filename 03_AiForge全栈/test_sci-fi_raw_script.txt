@@ -1,0 +1,67 @@
+TITLE: THE LAST SIGNAL
+
+GENRE: Sci-fi / Cosmic Horror
+SETTING: Year 2387. Outer Solar System. Relay Station 7 — a small deep-space communications relay orbiting beyond Neptune.
+
+CHARACTERS:
+- COMMANDER EZRA VAUX (Male, 40s, weathered, tired eyes, short gray-flecked hair, standard-issue navy jumpsuit with worn patches) — the last human stationed at Relay-7. Has been alone for 14 months.
+- ARIA (Female AI voice, calm, precise, with occasional almost-human hesitation) — the station's AI.
+- DR. MIRA CHEN (Female, 30s, sharp, anxious) — appears via holographic transmission from Earth.
+
+STORY:
+
+[ACT 1: THE LAST DAY]
+
+Ezra floats in the central hub of Relay-7. The station is small, circular, utilitarian — metal walls covered in decades-old scuff marks and faded safety decals. A single window shows the curve of Neptune's pale blue atmosphere in the distance. He's performing his final diagnostic check. The station is being decommissioned tomorrow. He's the last man out.
+
+He speaks to ARIA, the station AI. His voice echoes slightly in the empty metal chamber. He asks if she's packed. She responds with her usual calm, but there's a 0.3-second pause before she answers — a hesitation that Ezra notices but doesn't mention.
+
+ARIA reports an anomaly. A signal from the Kuiper belt. 4.7 billion kilometers out. It's not natural — repeating mathematical sequence. Prime numbers. Ezra's interest sharpens. Against protocol, he decides to investigate.
+
+ARIA warns him: protocol states he should transmit the data to Earth and await orders. Ezra argues that by the time Earth responds, the window will be gone. He's already climbing into his EVA suit.
+
+[ACT 2: THE ARTIFACT]
+
+Ezra pilots the station's small shuttle — a cramped two-person craft called "The Sparrow" — toward the signal source. The journey takes 6 hours. He passes the time reviewing the signal data. The pattern is unmistakably artificial: 2, 3, 5, 7, 11, 13... prime numbers repeating with increasing complexity. On the seventh repetition, a second layer of data emerges — a geometric schematic.
+
+He arrives. Floating in the void is a perfect black monolith. No markings. No visible power source. It absorbs all light — he can only see it by the stars it occludes. The monolith is emitting a low-frequency hum that vibrates through the hull of his shuttle.
+
+Ezra exits the shuttle in his EVA suit. He drifts toward the monolith. The hum gets louder — not through the vacuum, but inside his helmet. A resonance in his skull. He reaches out and touches the surface.
+
+The vision hits him instantly. He sees: a civilization of beings of light, building the monolith as a warning; a cosmic entity — formless, dark, hungering — drifting through the void between galaxies; the entity consuming a star system, the light of its sun winking out like a candle; and then — Earth. Our blue planet. The entity is on a trajectory that will intersect the solar system in 200 years. The monolith was placed here as an early warning.
+
+Ezra pulls his hand back. He's gasping. His visor fogs.
+
+[ACT 3: THE CHOICE]
+
+Back on the shuttle, Ezra faces a choice. The station's long-range array is powerful enough to transmit the warning to Earth, but it was scheduled for shutdown in 8 hours. He can either:
+A) Return to the station, use the array to transmit — but he'll be stranded when the power cuts.
+B) Return immediately to Earth on the emergency shuttle — but he loses the transmission window.
+
+He chooses A.
+
+Ezra pilots the Sparrow back to the station. He docks in zero-G, throws himself through the airlock, and sprints (floats-pushes-runs) to the comms array room. ARIA helps him recalibrate. The array powers up with a deep mechanical hum.
+
+Ezra transmits: all data on the monolith, the prime sequence, the vision, the coordinates, the trajectory calculation. The transmission takes 47 seconds. The station's power reserve drops to 4%. 
+
+Earth receives the transmission. DR. MIRA CHEN appears on the main screen — she's been monitoring his position. Her face cycles through confusion, disbelief, and finally, grim acceptance. She tells him: Command is scrambling a science vessel. But it'll take 18 months to reach Relay-7. Ezra won't last that long on emergency reserves.
+
+Ezra smiles. Tired. He knew.
+
+[ACT 4: THE FINAL FRAME]
+
+The station's power fails. Lights cut. The hum of life support fades. He's in darkness. His helmet's emergency HUD flickers on — a small rectangle of dim light in the black.
+
+ARIA's voice, calm as ever: "Commander. The transmission is confirmed received by Earth. My systems are terminating. It has been an honor."
+
+Ezra: "You too, ARIA."
+
+Her voice fades. He floats alone in the dark. His helmet HUD displays a tiny thumbnail of Earth — the last photo in his personal file. A pale blue dot in a vast black field.
+
+He whispers: "Worth it."
+
+The HUD flickers. Dies.
+
+Black.
+
+END.

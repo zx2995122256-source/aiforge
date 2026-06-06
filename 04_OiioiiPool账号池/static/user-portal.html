@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI API - 用户中心</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh}
+.container{max-width:720px;margin:0 auto;padding:24px 16px}
+h1{font-size:24px;font-weight:700;margin-bottom:4px;background:linear-gradient(135deg,#60a5fa,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.subtitle{color:#94a3b8;font-size:14px;margin-bottom:24px}
+.card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px;margin-bottom:16px}
+.card-title{font-size:16px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.card-title .icon{font-size:18px}
+input{width:100%;padding:10px 14px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#e2e8f0;font-size:14px;outline:none;transition:border .2s}
+input:focus{border-color:#60a5fa}
+label{display:block;font-size:13px;color:#94a3b8;margin-bottom:6px}
+.form-row{margin-bottom:14px}
+.btn{padding:10px 20px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-primary{background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:#fff}
+.btn-primary:hover{opacity:.9;transform:translateY(-1px)}
+.btn-sm{padding:6px 14px;font-size:13px}
+.btn-danger{background:#ef4444;color:#fff}
+.btn-ghost{background:transparent;border:1px solid #334155;color:#94a3b8}
+.btn-ghost:hover{border-color:#60a5fa;color:#60a5fa}
+.key-box{background:#0f172a;border:1px solid #334155;border-radius:8px;padding:12px;font-family:monospace;font-size:13px;word-break:break-all;position:relative;cursor:pointer;transition:border .2s}
+.key-box:hover{border-color:#60a5fa}
+.key-box .copy-hint{position:absolute;top:8px;right:10px;font-size:11px;color:#64748b;font-family:sans-serif}
+.balance{font-size:36px;font-weight:700;color:#60a5fa}
+.balance small{font-size:14px;color:#94a3b8;font-weight:400}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.stat-item{background:#0f172a;border-radius:8px;padding:14px;text-align:center}
+.stat-value{font-size:22px;font-weight:700;color:#e2e8f0}
+.stat-label{font-size:12px;color:#64748b;margin-top:4px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:8px;color:#64748b;border-bottom:1px solid #1e293b;font-weight:500}
+td{padding:8px;border-bottom:1px solid #1e293b}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+.badge-green{background:#064e3b;color:#6ee7b7}
+.badge-yellow{background:#713f12;color:#fde047}
+.badge-red{background:#7f1d1d;color:#fca5a5}
+.badge-blue{background:#1e3a5f;color:#93c5fd}
+.tabs{display:flex;gap:4px;margin-bottom:20px;background:#1e293b;border-radius:10px;padding:4px}
+.tab{flex:1;padding:8px;text-align:center;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;color:#94a3b8;transition:all .2s}
+.tab.active{background:#3b82f6;color:#fff}
+.tab:hover:not(.active){color:#e2e8f0}
+.pricing-grid{display:grid;gap:8px}
+.price-row{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#0f172a;border-radius:6px;font-size:13px}
+.price-model{color:#60a5fa;font-weight:500}
+.price-value{color:#fbbf24;font-weight:600}
+.toast{position:fixed;top:20px;right:20px;padding:12px 20px;border-radius:8px;font-size:14px;z-index:999;animation:slideIn .3s}
+.toast-success{background:#064e3b;color:#6ee7b7;border:1px solid #065f46}
+.toast-error{background:#7f1d1d;color:#fca5a5;border:1px solid #991b1b}
+@keyframes slideIn{from{transform:translateX(100px);opacity:0}to{transform:translateX(0);opacity:1}}
+.api-base{background:#0f172a;border:1px solid #334155;border-radius:8px;padding:10px 14px;font-family:monospace;font-size:13px;color:#60a5fa;margin-bottom:16px;word-break:break-all}
+.section{display:none}
+.section.active{display:block}
+.empty{text-align:center;color:#64748b;padding:30px;font-size:14px}
+.code-block{background:#0f172a;border:1px solid #334155;border-radius:8px;padding:14px;font-family:monospace;font-size:12px;white-space:pre-wrap;color:#94a3b8;margin-top:8px;overflow-x:auto}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>AI API</h1>
+  <p class="subtitle">图片 & 视频生成 API — OpenAI 兼容接口</p>
+
+  <!-- 未登录 -->
+  <div id="auth-section">
+    <div class="tabs">
+      <div class="tab active" onclick="switchAuth('login')">登录</div>
+      <div class="tab" onclick="switchAuth('register')">注册</div>
+    </div>
+
+    <div id="login-form" class="card">
+      <div class="form-row">
+        <label>用户名</label>
+        <input id="login-user" placeholder="输入用户名">
+      </div>
+      <div class="form-row">
+        <label>密码</label>
+        <input id="login-pass" type="password" placeholder="输入密码">
+      </div>
+      <button class="btn btn-primary" onclick="doLogin()" style="width:100%">登录</button>
+    </div>
+
+    <div id="register-form" class="card" style="display:none">
+      <div class="form-row">
+        <label>用户名（3-32字符）</label>
+        <input id="reg-user" placeholder="设置用户名">
+      </div>
+      <div class="form-row">
+        <label>密码（至少6位）</label>
+        <input id="reg-pass" type="password" placeholder="设置密码">
+      </div>
+      <div class="form-row">
+        <label>确认密码</label>
+        <input id="reg-pass2" type="password" placeholder="再次输入密码">
+      </div>
+      <button class="btn btn-primary" onclick="doRegister()" style="width:100%">注册并获取API Key</button>
+    </div>
+  </div>
+
+  <!-- 已登录 -->
+  <div id="main-section" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <span id="welcome-text" style="font-size:14px;color:#94a3b8"></span>
+      <button class="btn btn-ghost btn-sm" onclick="doLogout()">退出</button>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('overview')">概览</div>
+      <div class="tab" onclick="switchTab('keys')">API Key</div>
+      <div class="tab" onclick="switchTab('recharge')">充值</div>
+      <div class="tab" onclick="switchTab('usage')">用量</div>
+      <div class="tab" onclick="switchTab('pricing')">定价</div>
+      <div class="tab" onclick="switchTab('docs')">文档</div>
+    </div>
+
+    <!-- 概览 -->
+    <div id="tab-overview" class="section active">
+      <div class="card">
+        <div class="card-title"><span class="icon">💰</span> 账户余额</div>
+        <div class="balance" id="balance-display">0.00 <small>元</small></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">🔑</span> API Base URL</div>
+        <div class="api-base" id="api-base-url"></div>
+        <div class="card-title" style="margin-top:12px"><span class="icon">🗝️</span> 默认 API Key</div>
+        <div class="key-box" id="default-key" onclick="copyKey()">
+          <span id="key-text">加载中...</span>
+          <span class="copy-hint">点击复制</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">📊</span> 使用统计</div>
+        <div class="stats-grid" id="stats-grid"></div>
+      </div>
+    </div>
+
+    <!-- API Key -->
+    <div id="tab-keys" class="section">
+      <div class="card">
+        <div class="card-title"><span class="icon">🔑</span> 我的 API Key</div>
+        <div id="keys-list"></div>
+        <button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="createNewKey()">+ 创建新 Key</button>
+      </div>
+    </div>
+
+    <!-- 充值 -->
+    <div id="tab-recharge" class="section">
+      <div class="card">
+        <div class="card-title"><span class="icon">🎁</span> 兑换码充值</div>
+        <p style="font-size:13px;color:#94a3b8;margin-bottom:14px">输入兑换码即可充值余额</p>
+        <div class="form-row">
+          <input id="redeem-code" placeholder="输入兑换码，如 RC-A1B2C3D4E5F6" style="font-family:monospace;text-transform:uppercase">
+        </div>
+        <button class="btn btn-primary" onclick="doRedeem()" style="width:100%">兑换</button>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">💰</span> 当前余额</div>
+        <div class="balance" id="recharge-balance">0.00 <small>元</small></div>
+      </div>
+    </div>
+
+    <!-- 用量 -->
+    <div id="tab-usage" class="section">
+      <div class="card">
+        <div class="card-title"><span class="icon">📋</span> 调用日志</div>
+        <div id="logs-table" style="overflow-x:auto"></div>
+      </div>
+    </div>
+
+    <!-- 定价 -->
+    <div id="tab-pricing" class="section">
+      <div class="card">
+        <div class="card-title"><span class="icon">💲</span> 图片生成</div>
+        <div class="pricing-grid" id="image-pricing"></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">🎬</span> 视频生成</div>
+        <div class="pricing-grid" id="video-pricing"></div>
+      </div>
+    </div>
+
+    <!-- 文档 -->
+    <div id="tab-docs" class="section">
+      <div class="card">
+        <div class="card-title"><span class="icon">📖</span> 快速开始</div>
+        <p style="font-size:13px;color:#94a3b8;margin-bottom:12px">API 完全兼容 OpenAI 格式，可直接使用 OpenAI SDK 调用。</p>
+
+        <label>Python 示例（图片）</label>
+        <div class="code-block">from openai import OpenAI
+
+client = OpenAI(
+    api_key="<你的API Key>",
+    base_url="<API Base URL>"
+)
+
+result = client.images.generate(
+    model="gpt-image-2",
+    prompt="a cute cat sitting on a cloud",
+    size="1024x1024"
+)
+print(result)</div>
+
+        <label style="margin-top:16px">cURL 示例（视频）</label>
+        <div class="code-block">curl -X POST &lt;API Base URL&gt;/videos/generations \
+  -H "Authorization: Bearer &lt;你的API Key&gt;" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "grok-imagine",
+    "prompt": "sunset over the ocean",
+    "duration": 10,
+    "resolution": "720p"
+  }'</div>
+
+        <label style="margin-top:16px">查询任务状态</label>
+        <div class="code-block">curl &lt;API Base URL&gt;/videos/generations/{task_id} \
+  -H "Authorization: Bearer &lt;你的API Key&gt;"</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="icon">📋</span> 可用模型</div>
+        <table>
+          <tr><th>模型ID</th><th>类型</th><th>说明</th></tr>
+          <tr><td>gpt-image-2</td><td><span class="badge badge-blue">图片</span></td><td>GPT Image 2 高质量图片生成</td></tr>
+          <tr><td>grok-imagine</td><td><span class="badge badge-green">视频</span></td><td>Grok Imagine 视频生成</td></tr>
+          <tr><td>gemini-omni</td><td><span class="badge badge-green">视频</span></td><td>Gemini Omni 多分辨率视频</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = window.location.origin + '/pool';
+let authToken = '';
+let currentUser = null;
+
+function toast(msg, type='success') {
+  const d = document.createElement('div');
+  d.className = 'toast toast-' + type;
+  d.textContent = msg;
+  document.body.appendChild(d);
+  setTimeout(() => d.remove(), 3000);
+}
+
+async function api(path, opts={}) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (authToken) headers['Authorization'] = 'Bearer ' + authToken;
+  const res = await fetch(API + path, { ...opts, headers: { ...headers, ...opts.headers } });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || JSON.stringify(data));
+  return data;
+}
+
+// Auth
+function switchAuth(tab) {
+  document.querySelectorAll('#auth-section .tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('login-form').style.display = tab === 'login' ? '' : 'none';
+  document.getElementById('register-form').style.display = tab === 'register' ? '' : 'none';
+}
+
+async function doLogin() {
+  const username = document.getElementById('login-user').value.trim();
+  const password = document.getElementById('login-pass').value;
+  if (!username || !password) return toast('请填写用户名和密码', 'error');
+  try {
+    const data = await api('/api/user/login', {
+      method: 'POST', body: JSON.stringify({ username, password })
+    });
+    authToken = data.token;
+    currentUser = data;
+    localStorage.setItem('api_token', authToken);
+    showMain();
+    toast('登录成功');
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function doRegister() {
+  const username = document.getElementById('reg-user').value.trim();
+  const password = document.getElementById('reg-pass').value;
+  const password2 = document.getElementById('reg-pass2').value;
+  if (!username || !password) return toast('请填写用户名和密码', 'error');
+  if (password !== password2) return toast('两次密码不一致', 'error');
+  try {
+    const data = await api('/api/user/self-register', {
+      method: 'POST', body: JSON.stringify({ username, password })
+    });
+    toast('注册成功！API Key 已自动生成');
+    // 自动登录
+    const loginData = await api('/api/user/login', {
+      method: 'POST', body: JSON.stringify({ username, password })
+    });
+    authToken = loginData.token;
+    currentUser = loginData;
+    localStorage.setItem('api_token', authToken);
+    showMain();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+function doLogout() {
+  authToken = '';
+  currentUser = null;
+  localStorage.removeItem('api_token');
+  document.getElementById('auth-section').style.display = '';
+  document.getElementById('main-section').style.display = 'none';
+}
+
+// Main
+async function showMain() {
+  document.getElementById('auth-section').style.display = 'none';
+  document.getElementById('main-section').style.display = '';
+  document.getElementById('api-base-url').textContent = window.location.origin + '/v1';
+  document.getElementById('welcome-text').textContent = '你好，' + (currentUser.username || '');
+  await loadOverview();
+}
+
+async function loadOverview() {
+  try {
+    const info = await api('/api/user/info');
+    document.getElementById('balance-display').innerHTML = info.balance.toFixed(2) + ' <small>元</small>';
+    document.getElementById('recharge-balance').innerHTML = info.balance.toFixed(2) + ' <small>元</small>';
+  } catch(e) {}
+
+  try {
+    const keys = await api('/api/key/list');
+    const defaultKey = keys.keys && keys.keys[0];
+    if (defaultKey) {
+      document.getElementById('key-text').textContent = defaultKey.key_prefix + '****' + (defaultKey.name ? ' (' + defaultKey.name + ')' : '');
+      document.getElementById('default-key').dataset.fullKey = defaultKey.key_prefix + '****';
+    }
+    renderKeys(keys.keys || []);
+  } catch(e) {}
+
+  try {
+    const stats = await api('/api/stats');
+    const grid = document.getElementById('stats-grid');
+    grid.innerHTML = `
+      <div class="stat-item"><div class="stat-value">${stats.total_calls || 0}</div><div class="stat-label">总调用次数</div></div>
+      <div class="stat-item"><div class="stat-value">¥${(stats.total_cost || 0).toFixed(2)}</div><div class="stat-label">总消费</div></div>
+      <div class="stat-item"><div class="stat-value">${stats.success_rate || '0%'}</div><div class="stat-label">成功率</div></div>
+      <div class="stat-item"><div class="stat-value">${stats.today_calls || 0}</div><div class="stat-label">今日调用</div></div>
+    `;
+  } catch(e) {}
+}
+
+function renderKeys(keys) {
+  const el = document.getElementById('keys-list');
+  if (!keys.length) { el.innerHTML = '<div class="empty">暂无 API Key</div>'; return; }
+  el.innerHTML = keys.map(k => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #1e293b">
+      <div>
+        <div style="font-family:monospace;font-size:13px;color:#60a5fa">${k.key_prefix}****</div>
+        <div style="font-size:12px;color:#64748b;margin-top:2px">${k.name || 'default'} · 已用 ¥${(k.used_quota||0).toFixed(2)} · <span class="badge ${k.status==='active'?'badge-green':'badge-red'}">${k.status}</span></div>
+      </div>
+      <button class="btn btn-danger btn-sm" onclick="revokeKey(${k.id})">吊销</button>
+    </div>
+  `).join('');
+}
+
+async function createNewKey() {
+  const name = prompt('Key 名称（可选）：') || 'key-' + Date.now();
+  try {
+    const data = await api('/api/key/create', {
+      method: 'POST', body: JSON.stringify({ name, quota: 0, rate_limit: 10, models: '', expires_days: 0 })
+    });
+    if (data.key) {
+      toast('Key 创建成功！请立即保存：' + data.key);
+      // 显示完整key让用户复制
+      const el = document.getElementById('key-text');
+      el.textContent = data.key;
+      document.getElementById('default-key').dataset.fullKey = data.key;
+    }
+    await loadOverview();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function revokeKey(id) {
+  if (!confirm('确定吊销此 Key？吊销后不可恢复！')) return;
+  try {
+    await api('/api/key/' + id, { method: 'DELETE' });
+    toast('Key 已吊销');
+    await loadOverview();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+function copyKey() {
+  const text = document.getElementById('key-text').textContent;
+  if (text.includes('****')) {
+    toast('完整 Key 仅在创建时显示一次，请查看创建时的提示', 'error');
+    return;
+  }
+  navigator.clipboard.writeText(text).then(() => toast('已复制到剪贴板'));
+}
+
+async function doRedeem() {
+  const code = document.getElementById('redeem-code').value.trim().toUpperCase();
+  if (!code) return toast('请输入兑换码', 'error');
+  try {
+    const data = await api('/api/redeem/use', {
+      method: 'POST', body: JSON.stringify({ code })
+    });
+    toast('充值成功！+¥' + data.amount.toFixed(2) + '，当前余额 ¥' + data.new_balance.toFixed(2));
+    document.getElementById('redeem-code').value = '';
+    await loadOverview();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+// Tabs
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'usage') loadLogs();
+  if (name === 'pricing') loadPricing();
+}
+
+async function loadLogs() {
+  try {
+    const data = await api('/api/logs?limit=50');
+    const logs = data.logs || [];
+    const el = document.getElementById('logs-table');
+    if (!logs.length) { el.innerHTML = '<div class="empty">暂无调用记录</div>'; return; }
+    el.innerHTML = `<table><tr><th>时间</th><th>模型</th><th>类型</th><th>费用</th><th>状态</th></tr>` +
+      logs.map(l => `<tr>
+        <td>${new Date(l.created_at*1000).toLocaleString()}</td>
+        <td>${l.model}</td>
+        <td>${l.task_type}</td>
+        <td>¥${(l.cost_yuan||0).toFixed(2)}</td>
+        <td><span class="badge ${l.status==='completed'?'badge-green':l.status==='failed'?'badge-red':'badge-yellow'}">${l.status}</span></td>
+      </tr>`).join('') + '</table>';
+  } catch(e) {}
+}
+
+async function loadPricing() {
+  try {
+    const data = await api('/api/pricing');
+    const models = data.models || [];
+    const imgEl = document.getElementById('image-pricing');
+    const vidEl = document.getElementById('video-pricing');
+    imgEl.innerHTML = '';
+    vidEl.innerHTML = '';
+    models.forEach(m => {
+      if (m.type === 'image') {
+        m.prices.forEach(p => {
+          imgEl.innerHTML += `<div class="price-row"><span class="price-model">${m.id} · ${p.resolution}</span><span class="price-value">¥${p.price.toFixed(2)}/张</span></div>`;
+        });
+      } else {
+        m.prices.forEach(p => {
+          vidEl.innerHTML += `<div class="price-row"><span class="price-model">${m.id} · ${p.duration}s · ${p.resolution}</span><span class="price-value">¥${p.price.toFixed(2)}</span></div>`;
+        });
+      }
+    });
+  } catch(e) {}
+}
+
+// Auto login
+(async function() {
+  const saved = localStorage.getItem('api_token');
+  if (saved) {
+    authToken = saved;
+    try {
+      const info = await api('/api/user/info');
+      currentUser = info;
+      showMain();
+    } catch(e) {
+      localStorage.removeItem('api_token');
+      authToken = '';
+    }
+  }
+})();
+</script>
+</body>
+</html>

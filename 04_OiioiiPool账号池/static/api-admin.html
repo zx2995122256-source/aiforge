@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>API 管理后台</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+.container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+h1 { font-size: 24px; margin-bottom: 20px; color: #f8fafc; }
+h2 { font-size: 18px; margin: 20px 0 12px; color: #94a3b8; }
+.card { background: #1e293b; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #334155; }
+.card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.card-title { font-size: 16px; font-weight: 600; color: #f1f5f9; }
+input, select, textarea { background: #0f172a; border: 1px solid #475569; border-radius: 8px; padding: 8px 12px; color: #e2e8f0; font-size: 14px; width: 100%; outline: none; }
+input:focus, select:focus, textarea:focus { border-color: #818cf8; }
+button { background: #6366f1; color: white; border: none; border-radius: 8px; padding: 8px 16px; font-size: 14px; cursor: pointer; transition: background 0.2s; }
+button:hover { background: #4f46e5; }
+button:disabled { background: #475569; cursor: not-allowed; }
+button.danger { background: #ef4444; }
+button.danger:hover { background: #dc2626; }
+button.secondary { background: #334155; }
+button.secondary:hover { background: #475569; }
+.row { display: flex; gap: 12px; margin-bottom: 12px; align-items: center; }
+.row > * { flex: 1; }
+label { font-size: 13px; color: #94a3b8; margin-bottom: 4px; display: block; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; padding: 8px 12px; color: #94a3b8; border-bottom: 1px solid #334155; font-weight: 500; }
+td { padding: 8px 12px; border-bottom: 1px solid #1e293b; }
+tr:hover td { background: #1e293b; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+.badge.active { background: #065f46; color: #6ee7b7; }
+.badge.revoked { background: #7f1d1d; color: #fca5a5; }
+.badge.admin { background: #4c1d95; color: #c4b5fd; }
+.badge.user { background: #1e3a5f; color: #93c5fd; }
+.key-text { font-family: monospace; font-size: 12px; color: #a78bfa; word-break: break-all; }
+.balance { font-size: 20px; font-weight: 700; color: #34d399; }
+.price-table { font-size: 12px; }
+.price-table td, .price-table th { padding: 4px 8px; }
+.toast { position: fixed; top: 20px; right: 20px; padding: 12px 20px; border-radius: 8px; color: white; font-size: 14px; z-index: 1000; animation: slideIn 0.3s; }
+.toast.success { background: #065f46; }
+.toast.error { background: #7f1d1d; }
+@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+.tabs { display: flex; gap: 4px; margin-bottom: 20px; }
+.tab { padding: 8px 16px; border-radius: 8px 8px 0 0; cursor: pointer; font-size: 14px; color: #94a3b8; background: #1e293b; border: 1px solid #334155; border-bottom: none; }
+.tab.active { color: #f1f5f9; background: #334155; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+.log-status { font-size: 11px; }
+.log-status.completed { color: #34d399; }
+.log-status.failed { color: #f87171; }
+.log-status.pending, .log-status.processing { color: #fbbf24; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>API 管理后台</h1>
+
+  <!-- 登录 -->
+  <div id="login-section" class="card">
+    <div class="card-title">登录</div>
+    <div class="row">
+      <div><label>用户名</label><input id="login-user" value="admin" /></div>
+      <div><label>密码</label><input id="login-pass" type="password" value="admin123" /></div>
+      <div style="flex:0"><label>&nbsp;</label><button onclick="doLogin()">登录</button></div>
+    </div>
+  </div>
+
+  <!-- 主面板 -->
+  <div id="main-panel" style="display:none">
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('overview')">概览</div>
+      <div class="tab" onclick="switchTab('keys')">API Key</div>
+      <div class="tab" onclick="switchTab('users')">用户</div>
+      <div class="tab" onclick="switchTab('redeem')">兑换码</div>
+      <div class="tab" onclick="switchTab('pricing')">定价</div>
+      <div class="tab" onclick="switchTab('logs')">日志</div>
+      <div class="tab" onclick="switchTab('test')">测试</div>
+    </div>
+
+    <!-- 概览 -->
+    <div id="tab-overview" class="tab-content active">
+      <div class="row">
+        <div class="card" style="text-align:center">
+          <div style="color:#94a3b8;font-size:13px">余额</div>
+          <div class="balance" id="my-balance">--</div>
+        </div>
+        <div class="card" style="text-align:center">
+          <div style="color:#94a3b8;font-size:13px">API Key 数</div>
+          <div class="balance" id="my-key-count">--</div>
+        </div>
+        <div class="card" style="text-align:center">
+          <div style="color:#94a3b8;font-size:13px">总调用</div>
+          <div class="balance" id="my-total-calls">--</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- API Key -->
+    <div id="tab-keys" class="tab-content">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">创建新 Key</div>
+        </div>
+        <div class="row">
+          <div><label>名称</label><input id="key-name" placeholder="my-key" /></div>
+          <div><label>额度上限(0=无限)</label><input id="key-quota" type="number" value="0" /></div>
+          <div><label>限速(次/分)</label><input id="key-ratelimit" type="number" value="10" /></div>
+          <div><label>有效期(天,0=永久)</label><input id="key-expires" type="number" value="0" /></div>
+        </div>
+        <div class="row">
+          <div><label>允许模型(空=全部)</label><input id="key-models" placeholder="gpt-image-2,grok-imagine,gemini-omni" /></div>
+          <div style="flex:0"><label>&nbsp;</label><button onclick="createKey()">创建</button></div>
+        </div>
+        <div id="new-key-display" style="display:none" class="card" style="margin-top:12px">
+          <div style="color:#fbbf24;font-size:13px;margin-bottom:8px">请立即复制，此 Key 只显示一次！</div>
+          <div class="key-text" id="new-key-text"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Key 列表</div>
+        <table>
+          <thead><tr><th>ID</th><th>前缀</th><th>名称</th><th>额度</th><th>已用</th><th>限速</th><th>模型</th><th>状态</th><th>操作</th></tr></thead>
+          <tbody id="keys-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 用户 -->
+    <div id="tab-users" class="tab-content">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">注册新用户</div>
+        </div>
+        <div class="row">
+          <div><label>用户名</label><input id="reg-user" /></div>
+          <div><label>密码</label><input id="reg-pass" type="password" /></div>
+          <div style="flex:0"><label>&nbsp;</label><button onclick="registerUser()">注册</button></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">用户列表</div>
+        <table>
+          <thead><tr><th>ID</th><th>用户名</th><th>余额</th><th>角色</th><th>状态</th><th>操作</th></tr></thead>
+          <tbody id="users-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 兑换码 -->
+    <div id="tab-redeem" class="tab-content">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">生成兑换码</span>
+        </div>
+        <div class="row">
+          <div><label>金额（元）</label><input id="rc-amount" type="number" value="10" step="0.01" min="0.01"></div>
+          <div><label>数量</label><input id="rc-count" type="number" value="10" min="1" max="100"></div>
+          <div style="flex:0 0 auto;align-self:flex-end"><button onclick="genRedeemCodes()">生成</button></div>
+        </div>
+        <div id="rc-result" style="margin-top:12px"></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">兑换码列表</span>
+          <div class="row" style="margin:0;gap:8px;flex:0">
+            <select id="rc-filter" onchange="loadRedeemCodes()" style="width:auto">
+              <option value="">全部</option>
+              <option value="active">未使用</option>
+              <option value="used">已使用</option>
+            </select>
+            <button class="secondary" onclick="loadRedeemCodes()">刷新</button>
+          </div>
+        </div>
+        <div id="rc-list" style="overflow-x:auto"></div>
+      </div>
+    </div>
+
+    <!-- 定价 -->
+    <div id="tab-pricing" class="tab-content">
+      <div class="card" id="pricing-card"></div>
+    </div>
+
+    <!-- 日志 -->
+    <div id="tab-logs" class="tab-content">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">调用日志</div>
+          <button class="secondary" onclick="loadLogs()">刷新</button>
+        </div>
+        <table>
+          <thead><tr><th>ID</th><th>用户</th><th>模型</th><th>类型</th><th>时长</th><th>分辨率</th><th>费用</th><th>状态</th><th>时间</th></tr></thead>
+          <tbody id="logs-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 测试 -->
+    <div id="tab-test" class="tab-content">
+      <div class="card">
+        <div class="card-title">API 测试</div>
+        <div class="row">
+          <div><label>API Key</label><input id="test-key" placeholder="sk-..." /></div>
+        </div>
+        <div class="row">
+          <div><label>模型</label>
+            <select id="test-model">
+              <option value="gpt-image-2">gpt-image-2 (图片)</option>
+              <option value="grok-imagine">grok-imagine (视频)</option>
+              <option value="gemini-omni">gemini-omni (视频)</option>
+            </select>
+          </div>
+          <div><label>分辨率</label>
+            <select id="test-resolution">
+              <option value="2K">2K</option>
+              <option value="4K">4K</option>
+              <option value="720p">720p</option>
+              <option value="1080p">1080p</option>
+            </select>
+          </div>
+          <div><label>时长(视频)</label><input id="test-duration" type="number" value="10" /></div>
+        </div>
+        <div class="row">
+          <div style="flex:3"><label>Prompt</label><input id="test-prompt" value="a beautiful sunset over the ocean, cinematic" /></div>
+          <div style="flex:0"><label>&nbsp;</label><button onclick="testGenerate()">生成</button></div>
+        </div>
+        <div id="test-result" style="margin-top:12px;font-size:13px;color:#94a3b8"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">cURL 示例</div>
+        <pre style="background:#0f172a;padding:12px;border-radius:8px;font-size:12px;color:#a78bfa;overflow-x:auto" id="curl-example"></pre>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = window.location.origin + '/pool';
+let authToken = '';
+let currentUser = null;
+
+function toast(msg, type='success') {
+  const d = document.createElement('div');
+  d.className = 'toast ' + type;
+  d.textContent = msg;
+  document.body.appendChild(d);
+  setTimeout(() => d.remove(), 3000);
+}
+
+async function api(path, opts={}) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (authToken) headers['Authorization'] = 'Bearer ' + authToken;
+  const res = await fetch(API + path, { ...opts, headers: { ...headers, ...opts.headers } });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || JSON.stringify(data));
+  return data;
+}
+
+async function doLogin() {
+  try {
+    const user = document.getElementById('login-user').value;
+    const pass = document.getElementById('login-pass').value;
+    const data = await api('/api/user/login', {
+      method: 'POST',
+      body: JSON.stringify({ username: user, password: pass })
+    });
+    currentUser = data;
+    // 用用户名密码作为临时 token（简化版，实际应该用 API Key）
+    authToken = btoa(user + ':' + pass);
+    document.getElementById('login-section').style.display = 'none';
+    document.getElementById('main-panel').style.display = 'block';
+    loadOverview();
+    toast('登录成功');
+  } catch(e) {
+    toast(e.message, 'error');
+  }
+}
+
+async function loadOverview() {
+  try {
+    // 用 admin API Key 来认证管理接口
+    const info = await api('/api/user/info');
+    document.getElementById('my-balance').textContent = '¥' + (info.balance || 0).toFixed(2);
+    const keys = await api('/api/key/list');
+    document.getElementById('my-key-count').textContent = keys.keys ? keys.keys.length : 0;
+    const stats = await api('/api/stats');
+    document.getElementById('my-total-calls').textContent = stats.total || 0;
+  } catch(e) {
+    console.error(e);
+  }
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'keys') loadKeys();
+  if (name === 'users') loadUsers();
+  if (name === 'redeem') loadRedeemCodes();
+  if (name === 'pricing') loadPricing();
+  if (name === 'logs') loadLogs();
+  if (name === 'test') updateCurlExample();
+}
+
+async function createKey() {
+  try {
+    const data = await api('/api/key/create', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: document.getElementById('key-name').value,
+        quota: parseFloat(document.getElementById('key-quota').value) || 0,
+        rate_limit: parseInt(document.getElementById('key-ratelimit').value) || 10,
+        models: document.getElementById('key-models').value,
+        expires_days: parseInt(document.getElementById('key-expires').value) || 0,
+      })
+    });
+    document.getElementById('new-key-display').style.display = 'block';
+    document.getElementById('new-key-text').textContent = data.key;
+    document.getElementById('test-key').value = data.key;
+    toast('Key 创建成功');
+    loadKeys();
+  } catch(e) {
+    toast(e.message, 'error');
+  }
+}
+
+async function loadKeys() {
+  try {
+    const data = await api('/api/key/list');
+    const tbody = document.getElementById('keys-tbody');
+    tbody.innerHTML = '';
+    (data.keys || []).forEach(k => {
+      tbody.innerHTML += `<tr>
+        <td>${k.id}</td>
+        <td class="key-text">${k.key_prefix}...</td>
+        <td>${k.name || '-'}</td>
+        <td>${k.quota > 0 ? '¥' + k.quota : '无限'}</td>
+        <td>¥${(k.used_quota || 0).toFixed(2)}</td>
+        <td>${k.rate_limit}/min</td>
+        <td>${k.models || '全部'}</td>
+        <td><span class="badge ${k.status}">${k.status}</span></td>
+        <td>${k.status === 'active' ? `<button class="danger" onclick="revokeKey(${k.id})">吊销</button>` : ''}</td>
+      </tr>`;
+    });
+  } catch(e) { console.error(e); }
+}
+
+async function revokeKey(id) {
+  if (!confirm('确定吊销此 Key？')) return;
+  try {
+    await api('/api/key/' + id, { method: 'DELETE' });
+    toast('已吊销');
+    loadKeys();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function registerUser() {
+  try {
+    await api('/api/user/register', {
+      method: 'POST',
+      body: JSON.stringify({
+        username: document.getElementById('reg-user').value,
+        password: document.getElementById('reg-pass').value,
+      })
+    });
+    toast('注册成功');
+    loadUsers();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function loadUsers() {
+  try {
+    const data = await api('/api/admin/users');
+    const tbody = document.getElementById('users-tbody');
+    tbody.innerHTML = '';
+    (data.users || []).forEach(u => {
+      tbody.innerHTML += `<tr>
+        <td>${u.id}</td>
+        <td>${u.username}</td>
+        <td>¥${(u.balance || 0).toFixed(2)}</td>
+        <td><span class="badge ${u.role}">${u.role}</span></td>
+        <td><span class="badge ${u.status}">${u.status}</span></td>
+        <td><button class="secondary" onclick="rechargeUser(${u.id})">充值</button></td>
+      </tr>`;
+    });
+  } catch(e) { console.error(e); }
+}
+
+async function rechargeUser(uid) {
+  const amount = prompt('充值金额（元）:');
+  if (!amount || parseFloat(amount) <= 0) return;
+  try {
+    await api('/api/user/recharge', {
+      method: 'POST',
+      body: JSON.stringify({ user_id: uid, amount: parseFloat(amount) })
+    });
+    toast('充值成功');
+    loadUsers();
+    loadOverview();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function loadPricing() {
+  try {
+    const data = await api('/api/pricing');
+    let html = '<div class="card-title">模型定价</div>';
+    (data.models || []).forEach(m => {
+      html += `<h3 style="margin:12px 0 8px;color:#a78bfa">${m.id} <span style="color:#64748b;font-size:12px">(${m.type})</span></h3>`;
+      html += '<table class="price-table"><thead><tr>';
+      if (m.type === 'image') html += '<th>分辨率</th>';
+      else html += '<th>时长</th><th>分辨率</th>';
+      html += '<th>价格</th></tr></thead><tbody>';
+      m.prices.forEach(p => {
+        html += '<tr>';
+        if (m.type === 'image') html += `<td>${p.resolution}</td>`;
+        else html += `<td>${p.duration}s</td><td>${p.resolution}</td>`;
+        html += `<td style="color:#34d399;font-weight:600">¥${p.price.toFixed(2)}</td></tr>`;
+      });
+      html += '</tbody></table>';
+    });
+    document.getElementById('pricing-card').innerHTML = html;
+  } catch(e) { console.error(e); }
+}
+
+async function loadLogs() {
+  try {
+    const data = await api('/api/logs?limit=50');
+    const tbody = document.getElementById('logs-tbody');
+    tbody.innerHTML = '';
+    (data.logs || []).forEach(l => {
+      const t = l.created_at ? new Date(l.created_at * 1000).toLocaleString() : '-';
+      tbody.innerHTML += `<tr>
+        <td>${l.id}</td>
+        <td>${l.user_id}</td>
+        <td>${l.model}</td>
+        <td>${l.task_type}</td>
+        <td>${l.duration || '-'}</td>
+        <td>${l.resolution || '-'}</td>
+        <td style="color:#34d399">¥${(l.cost_yuan || 0).toFixed(2)}</td>
+        <td><span class="log-status ${l.status}">${l.status}</span></td>
+        <td style="font-size:11px">${t}</td>
+      </tr>`;
+    });
+  } catch(e) { console.error(e); }
+}
+
+async function testGenerate() {
+  const key = document.getElementById('test-key').value;
+  if (!key) { toast('请输入 API Key', 'error'); return; }
+  const model = document.getElementById('test-model').value;
+  const resolution = document.getElementById('test-resolution').value;
+  const duration = parseInt(document.getElementById('test-duration').value);
+  const prompt = document.getElementById('test-prompt').value;
+  const resultDiv = document.getElementById('test-result');
+  resultDiv.textContent = '提交中...';
+
+  try {
+    let endpoint, body;
+    if (model === 'gpt-image-2') {
+      endpoint = '/v1/images/generations';
+      body = { model, prompt, n: 1, size: resolution === '4K' ? '2048x2048' : '1024x1024' };
+    } else {
+      endpoint = '/v1/videos/generations';
+      body = { model, prompt, duration, resolution };
+    }
+
+    const res = await fetch(API + endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      resultDiv.innerHTML = `<span style="color:#f87171">错误: ${data.detail || JSON.stringify(data)}</span>`;
+      return;
+    }
+    resultDiv.innerHTML = `<span style="color:#34d399">提交成功!</span> Task ID: ${data.id || data.task_id}<br>状态: ${data.status}<br>费用: ¥${data.cost || 0}`;
+
+    // 轮询状态
+    if (data.id || data.task_id) {
+      const tid = data.id || data.task_id;
+      const pollEndpoint = model === 'gpt-image-2' ? `/v1/images/generations/${tid}` : `/v1/videos/generations/${tid}`;
+      const pollInterval = setInterval(async () => {
+        try {
+          const pr = await fetch(API + pollEndpoint, {
+            headers: { 'Authorization': 'Bearer ' + key }
+          });
+          const pd = await pr.json();
+          resultDiv.innerHTML += `<br>轮询: ${pd.status}`;
+          if (pd.status === 'completed') {
+            clearInterval(pollInterval);
+            resultDiv.innerHTML += `<br><span style="color:#34d399">完成!</span> URL: ${pd.url || pd.result_uri || ''}`;
+          } else if (pd.status === 'failed') {
+            clearInterval(pollInterval);
+            resultDiv.innerHTML += `<br><span style="color:#f87171">失败: ${pd.error || ''}</span>`;
+          }
+        } catch(e) { clearInterval(pollInterval); }
+      }, 5000);
+    }
+  } catch(e) {
+    resultDiv.innerHTML = `<span style="color:#f87171">错误: ${e.message}</span>`;
+  }
+}
+
+function updateCurlExample() {
+  const key = document.getElementById('test-key').value || 'sk-YOUR-KEY';
+  document.getElementById('curl-example').textContent =
+`# 图片生成
+curl -X POST ${API}/v1/images/generations \\
+  -H "Authorization: Bearer ${key}" \\
+  -H "Content-Type: application/json" \\
+  -d '{"model":"gpt-image-2","prompt":"a sunset","size":"1024x1024"}'
+
+# 视频生成
+curl -X POST ${API}/v1/videos/generations \\
+  -H "Authorization: Bearer ${key}" \\
+  -H "Content-Type: application/json" \\
+  -d '{"model":"grok-imagine","prompt":"ocean waves","duration":10,"resolution":"720p"}'
+
+# 查询状态
+curl ${API}/v1/videos/generations/TASK_ID \\
+  -H "Authorization: Bearer ${key}"
+
+# Python SDK
+from openai import OpenAI
+client = OpenAI(api_key="${key}", base_url="${API}/v1")
+resp = client.images.generate(model="gpt-image-2", prompt="a sunset", size="1024x1024")`;
+}
+
+// 初始化
+updateCurlExample();
+
+// ─── 兑换码 ───
+
+async function genRedeemCodes() {
+  const amount = parseFloat(document.getElementById('rc-amount').value);
+  const count = parseInt(document.getElementById('rc-count').value);
+  if (!amount || amount <= 0) return toast('金额必须大于0', 'error');
+  if (!count || count < 1) return toast('数量至少1', 'error');
+  try {
+    const data = await api('/api/redeem/create', {
+      method: 'POST',
+      body: JSON.stringify({ amount, count })
+    });
+    const codes = data.codes || [];
+    const el = document.getElementById('rc-result');
+    el.innerHTML = '<div style="background:#0f172a;border-radius:8px;padding:12px;font-family:monospace;font-size:13px;white-space:pre-wrap;color:#6ee7b7">' +
+      codes.map(c => c.code + '  (¥' + c.amount.toFixed(2) + ')').join('\n') +
+      '</div><button class="secondary" style="margin-top:8px" onclick="copyRedeemCodes()">复制全部</button>';
+    toast('已生成 ' + codes.length + ' 个兑换码');
+    loadRedeemCodes();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+function copyRedeemCodes() {
+  const text = document.getElementById('rc-result').innerText;
+  navigator.clipboard.writeText(text).then(() => toast('已复制'));
+}
+
+async function loadRedeemCodes() {
+  const status = document.getElementById('rc-filter').value;
+  try {
+    const data = await api('/api/redeem/list?status=' + status);
+    const codes = data.codes || [];
+    const el = document.getElementById('rc-list');
+    if (!codes.length) { el.innerHTML = '<div style="text-align:center;color:#64748b;padding:20px">暂无兑换码</div>'; return; }
+    el.innerHTML = '<table><tr><th>兑换码</th><th>金额</th><th>状态</th><th>使用者</th><th>创建时间</th></tr>' +
+      codes.map(c => '<tr><td style="font-family:monospace;color:#60a5fa">' + c.code + '</td><td>¥' + c.amount.toFixed(2) + '</td><td>' +
+        (c.status === 'active' ? '<span style="color:#6ee7b7">未使用</span>' : '<span style="color:#fca5a5">已使用</span>') +
+        '</td><td>' + (c.used_by || '-') + '</td><td>' + new Date(c.created_at*1000).toLocaleString() + '</td></tr>').join('') + '</table>';
+  } catch(e) { toast(e.message, 'error'); }
+}
+</script>
+</body>
+</html>

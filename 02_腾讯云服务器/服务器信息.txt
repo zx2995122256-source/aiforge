@@ -1,0 +1,9 @@
+IP: 122.51.205.94
+用户: ubuntu
+SSH密钥: keys/ssh_key.pem
+
+OS: $(cat /etc/os-release | head -1)
+Kernel: $(uname -r)
+CPU: $(nproc --all) cores
+RAM: $(free -h | grep Mem | awk "{print \$2}")
+Disk: $(df -h / | tail -1 | awk "{print \$3 \" / \" \$2 \" (\$5)\"}")
