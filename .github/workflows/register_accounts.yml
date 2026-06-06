@@ -1,23 +1,23 @@
-name: Register Oiioii Accounts
+name: Auto Pool Replenish
 
 on:
   schedule:
-    - cron: '0 0,6,12 * * *'
+    - cron: '0 0,2,4,6,8,10,12,14,16,18,20,22 * * *'
   workflow_dispatch:
     inputs:
       count:
-        description: 'Number of accounts to register'
-        default: '10'
+        description: 'Number of accounts per job'
+        default: '4'
         required: false
 
 jobs:
   register:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 30
     strategy:
       matrix:
-        batch-id: [1, 2, 3]
-      max-parallel: 3
+        batch-id: [1, 2, 3, 4, 5]
+      max-parallel: 5
 
     steps:
       - name: Checkout
@@ -38,19 +38,18 @@ jobs:
         run: |
           playwright install-deps chromium
 
-      - name: Register accounts
+      - name: Run
         env:
           SERVER_URL: ${{ secrets.SERVER_URL || 'http://122.51.205.94' }}
           CAPSOLVER_API_KEY: ${{ secrets.CAPSOLVER_API_KEY }}
         run: |
-          COUNT_INPUT="${{ github.event.inputs.count || '10' }}"
-          PER_JOB=$(( (COUNT_INPUT + 2) / 3 ))
-          python "04_OiioiiPool账号池/register_oiioii.py" --count $PER_JOB
+          COUNT_INPUT="${{ github.event.inputs.count || '4' }}"
+          python "04_OiioiiPool账号池/register_oiioii.py" --count $COUNT_INPUT
 
       - name: Upload result
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: register-result-${{ strategy.job-index }}
+          name: result-${{ strategy.job-index }}
           path: register_result.json
-          retention-days: 7
+          retention-days: 3
