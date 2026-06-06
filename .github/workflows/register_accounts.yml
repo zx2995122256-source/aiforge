@@ -7,7 +7,7 @@ on:
     inputs:
       count:
         description: 'Accounts per job'
-        default: '4'
+        default: '5'
         required: false
 
 env:
@@ -19,35 +19,28 @@ jobs:
     timeout-minutes: 30
     strategy:
       matrix:
-        batch-id: [1, 2, 3, 4, 5]
-      max-parallel: 5
-
+        batch-id: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+      max-parallel: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
-      - name: Install dependencies
+      - name: Install deps
         run: |
           python -m pip install --upgrade pip
           pip install playwright requests opencv-python-headless numpy onnxruntime shapely captcha-recognizer
           playwright install chromium
-
       - name: Install system deps
-        run: |
-          playwright install-deps chromium
-
+        run: playwright install-deps chromium
       - name: Register & push
         env:
           AIFORGE_SERVER: ${{ secrets.SERVER_URL || 'http://122.51.205.94' }}
         run: |
-          COUNT_INPUT="${{ github.event.inputs.count || '4' }}"
+          COUNT_INPUT="${{ github.event.inputs.count || '5' }}"
           python "04_OiioiiPool账号池/local_register_and_sync.py" --count $COUNT_INPUT
-
       - name: Upload result
         if: always()
         uses: actions/upload-artifact@v4
@@ -55,3 +48,23 @@ jobs:
           name: result-${{ strategy.job-index }}
           path: register_result_*.json
           retention-days: 3
+
+  daily_claim:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: github.event_name == 'schedule'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: |
+          pip install requests
+      - name: Daily claim all accounts
+        env:
+          AIFORGE_SERVER: ${{ secrets.SERVER_URL || 'http://122.51.205.94' }}
+        run: |
+          curl -s -X POST "$AIFORGE_SERVER/api/pool/daily_claim_all" | python -m json.tool

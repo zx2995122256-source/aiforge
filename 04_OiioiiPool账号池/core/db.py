@@ -22,6 +22,7 @@ _MIGRATIONS = [
     ("tasks", "duration_sec", "INTEGER", None),
     ("accounts", "total_tasks", "INTEGER", 0),
     ("accounts", "video_used", "INTEGER", 0),
+    ("accounts", "last_sync_at", "REAL", 0),
 ]
 
 
@@ -205,6 +206,16 @@ class AccountDB:
         conn.execute(
             "UPDATE accounts SET points_remaining = ?, total_spent = total_spent + ? WHERE id = ?",
             (points, spent, account_id)
+        )
+        conn.commit()
+        conn.close()
+
+    @staticmethod
+    def update_points_with_sync(account_id: int, points: int, sync_timestamp: float):
+        conn = get_conn()
+        conn.execute(
+            "UPDATE accounts SET points_remaining = ?, last_sync_at = ? WHERE id = ?",
+            (points, sync_timestamp, account_id)
         )
         conn.commit()
         conn.close()

@@ -208,22 +208,106 @@ def retry_task(task_id: int):
 
 
 @app.get("/api/pool/status")
-def pool_status():
+def pool_status(sync: bool = False):
     accounts = AccountDB.get_all()
+    now_ts = time.time()
+    last_sync_at = None
+
+    if sync:
+        from core.client import OiioiiClient
+        last_sync_at = now_ts
+        for a in accounts:
+            if a.get("status") != "active":
+                continue
+            try:
+                client = OiioiiClient(
+                    email=a["email"],
+                    password=a["password"],
+                    token=a.get("token", ""),
+                    workspace_id=a.get("workspace_id", ""),
+                    account_id=a["id"],
+                )
+                real_points = client.get_points()
+                if real_points >= 0:
+                    AccountDB.update_points_with_sync(a["id"], real_points, now_ts)
+                    a["points_remaining"] = real_points
+            except Exception:
+                pass
+        accounts = AccountDB.get_all()
+
     return {
         "total_accounts": len(accounts),
         "active_accounts": AccountDB.active_count(),
         "total_points": AccountDB.total_points(),
         "continuous_reg_running": _continuous_reg_running,
+        "last_sync_at": last_sync_at,
         "accounts": [
             {
                 "id": a["id"],
                 "email": a["email"],
                 "points": a["points_remaining"],
                 "status": a["status"],
+                "total_earned": a["total_earned"],
+                "last_used_at": a["last_used_at"],
+                "created_at": a["created_at"],
+                "last_sync_at": a.get("last_sync_at", 0),
             }
             for a in accounts
         ],
+    }
+
+
+@app.post("/api/pool/sync_points")
+def sync_points():
+    from core.client import OiioiiClient
+    accounts = AccountDB.get_all()
+    active = [a for a in accounts if a.get("status") == "active"]
+    now_ts = time.time()
+    success_count = 0
+    fail_count = 0
+    details = []
+
+    for a in active:
+        try:
+            client = OiioiiClient(
+                email=a["email"],
+                password=a["password"],
+                token=a.get("token", ""),
+                workspace_id=a.get("workspace_id", ""),
+                account_id=a["id"],
+            )
+            real_points = client.get_points()
+            if real_points >= 0:
+                AccountDB.update_points_with_sync(a["id"], real_points, now_ts)
+                success_count += 1
+                details.append({
+                    "id": a["id"],
+                    "email": a["email"],
+                    "previous_points": a["points_remaining"],
+                    "current_points": real_points,
+                })
+            else:
+                fail_count += 1
+                details.append({
+                    "id": a["id"],
+                    "email": a["email"],
+                    "error": "get_points returned -1 (login or API failure)",
+                })
+        except Exception as e:
+            fail_count += 1
+            details.append({
+                "id": a["id"],
+                "email": a["email"],
+                "error": str(e),
+            })
+
+    return {
+        "success": True,
+        "total_accounts": len(active),
+        "synced": success_count,
+        "failed": fail_count,
+        "last_sync_at": now_ts,
+        "details": details,
     }
 
 
@@ -432,6 +516,49 @@ def refresh_all():
     results = pool.refresh_all()
     ok = sum(1 for r in results if r.get("alive"))
     return {"success": True, "alive": ok, "total": len(results)}
+
+
+@app.post("/api/pool/daily_claim_all")
+def daily_claim_all():
+    """为所有活跃账号领取每日签到积分"""
+    accounts = AccountDB.get_all()
+    active = [a for a in accounts if a.get("status") == "active"]
+    from core.client import OiioiiClient
+    results = []
+    claimed = 0
+    skipped = 0
+    failed = 0
+    for a in active:
+        try:
+            client = OiioiiClient(
+                email=a["email"],
+                password=a["password"],
+                token=a.get("token", ""),
+                workspace_id=a.get("workspace_id", ""),
+                account_id=a["id"],
+            )
+            r = client.daily_claim()
+            if r["success"]:
+                if r.get("added", 0) > 0:
+                    claimed += 1
+                    AccountDB.update_points(a["id"], r.get("total", 0))
+                    results.append({"email": a["email"], "added": r.get("added", 0)})
+                else:
+                    skipped += 1
+            else:
+                failed += 1
+                results.append({"email": a["email"], "error": r.get("error", "?")})
+        except Exception as e:
+            failed += 1
+            results.append({"email": a["email"], "error": str(e)})
+    return {
+        "success": True,
+        "total": len(accounts),
+        "claimed": claimed,
+        "skipped": skipped,
+        "failed": failed,
+        "details": results,
+    }
 
 
 @app.delete("/api/pool/{account_id}")

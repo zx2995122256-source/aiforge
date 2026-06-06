@@ -15,7 +15,7 @@
 
 环境变量：
     SERVER_URL     - 目标服务器地址 (默认 http://122.51.205.94)
-    CAPSOLVER_API_KEY - Capsolver API Key（不用就靠 OpenCV 硬解）
+    CAPSOLVER_API_KEY - Capsolver API Key（不用就靠 captcha-recognizer）
 """
 import os
 import sys
@@ -102,8 +102,99 @@ class TempMail:
 
 
 # ====================================================================
-# 验证码解析
+# 验证码解析 - 使用 captcha-recognizer 库
 # ====================================================================
+class CaptchaSolver:
+    """使用 captcha-recognizer 深度学习库解滑块验证码"""
+
+    _slider = None
+
+    @classmethod
+    def _get_slider(cls):
+        if cls._slider is None:
+            from captcha_recognizer.slider import Slider
+            cls._slider = Slider()
+        return cls._slider
+
+    @classmethod
+    def solve(cls, bg_bytes, css_info=None):
+        try:
+            import cv2
+            import numpy as np
+        except ImportError:
+            print("  [Captcha] opencv not installed")
+            return None
+
+        try:
+            np_arr = np.frombuffer(bg_bytes, np.uint8)
+            raw_bg = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+            if raw_bg is None:
+                return None
+            original_w = raw_bg.shape[1]
+            display_w = int(css_info.get("bg_w", 0)) if css_info else 0
+            if display_w <= 0:
+                display_w = 330
+            scale = display_w / original_w
+
+            box, confidence = cls._get_slider().identify(source=bg_bytes)
+            if confidence < 0.5:
+                print(f"  [Captcha] confidence too low: {confidence:.2f}")
+                return None
+
+            gap_x = int(box[0])
+            slider_offset = int(css_info.get("slider_left", 0)) if css_info else 0
+            if slider_offset > 100 or slider_offset <= 0:
+                slider_offset = 25
+            final_x = int((gap_x * scale) - slider_offset)
+            if final_x < 20:
+                final_x = 50
+            if final_x > 280:
+                final_x = 250
+            return final_x
+        except Exception as e:
+            print(f"  [Captcha] solve error: {e}")
+            return None
+
+
+class CapsolverSolver:
+    """使用 Capsolver API 解验证码（付费，成功率 95%+）"""
+
+    BASE = "https://api.capsolver.com"
+
+    @staticmethod
+    def solve(bg_url, page_obj=None):
+        if not CAPSOLVER_KEY:
+            return None
+        try:
+            r = http_req.post(f"{CapsolverSolver.BASE}/createTask", json={
+                "clientKey": CAPSOLVER_KEY,
+                "task": {
+                    "type": "TencentCaptcha",
+                    "websiteURL": "https://www.oiioii.ai",
+                    "appId": "2081732914425521",
+                }
+            }, timeout=30)
+            task_id = r.json().get("taskId")
+            if not task_id:
+                return None
+            for _ in range(30):
+                time.sleep(2)
+                r2 = http_req.post(f"{CapsolverSolver.BASE}/getTaskResult", json={
+                    "clientKey": CAPSOLVER_KEY,
+                    "taskId": task_id,
+                }, timeout=15)
+                data = r2.json()
+                if data.get("status") == "ready":
+                    return data.get("solution", {}).get("ticket")
+                if data.get("status") == "failed":
+                    return None
+            return None
+        except Exception as e:
+            print(f"  [Capsolver] error: {e}")
+            return None
+
+
+# ─── JS 辅助 ───
 CAPTCHA_JS = """() => {
     const result = {bg_url: null, slider_url: null, bg_w: 0, bg_h: 0,
                    slider_w: 0, slider_h: 0, slider_left: 0,
@@ -157,97 +248,6 @@ navigator.permissions.query = (params) =>
 """
 
 
-class BuiltinCaptchaSolver:
-    """使用 OpenCV 边缘检测找滑块缺口（无需外部包）"""
-
-    @staticmethod
-    def solve(bg_bytes, css_info=None):
-        try:
-            import cv2
-            import numpy as np
-        except ImportError:
-            print("  [Captcha] opencv not installed, cannot solve locally")
-            return None
-
-        try:
-            np_arr = np.frombuffer(bg_bytes, np.uint8)
-            img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-            if img is None:
-                return None
-
-            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-            edges = cv2.Canny(gray, 50, 150)
-
-            h, w = edges.shape
-            display_w = int(css_info.get("bg_w", 0)) if css_info else 0
-            if display_w <= 0:
-                display_w = 340
-            scale = display_w / w
-
-            # 垂直投影：统计每列的边缘密度
-            col_density = np.sum(edges, axis=0)
-
-            # 找边缘密度最低的区间（缺口位置）
-            min_density = float("inf")
-            gap_x = 50
-            window = int(w * 0.08)  # 滑块宽度约 8% 图像宽度
-            for x in range(window, w - window):
-                density = np.sum(col_density[x - window // 2 : x + window // 2])
-                density_avg = density / window
-                if density_avg < min_density:
-                    min_density = density_avg
-                    gap_x = x
-
-            slider_offset = int(css_info.get("slider_left", 0)) if css_info else 0
-            if slider_offset > 100 or slider_offset <= 0:
-                slider_offset = 25
-            final_x = int((gap_x * scale) - slider_offset)
-            final_x = max(30, min(final_x, 280))
-            return final_x
-        except Exception as e:
-            print(f"  [Captcha] solve error: {e}")
-            return None
-
-
-class CapsolverSolver:
-    """使用 Capsolver API 解验证码（付费，成功率 95%+）"""
-
-    BASE = "https://api.capsolver.com"
-
-    @staticmethod
-    def solve(bg_url, page_obj=None):
-        if not CAPSOLVER_KEY:
-            return None
-        try:
-            r = http_req.post(f"{CapsolverSolver.BASE}/createTask", json={
-                "clientKey": CAPSOLVER_KEY,
-                "task": {
-                    "type": "TencentCaptcha",
-                    "websiteURL": "https://www.oiioii.ai",
-                    "appId": "2081732914425521",
-                }
-            }, timeout=30)
-            task_id = r.json().get("taskId")
-            if not task_id:
-                return None
-
-            for _ in range(30):
-                time.sleep(2)
-                r2 = http_req.post(f"{CapsolverSolver.BASE}/getTaskResult", json={
-                    "clientKey": CAPSOLVER_KEY,
-                    "taskId": task_id,
-                }, timeout=15)
-                data = r2.json()
-                if data.get("status") == "ready":
-                    return data.get("solution", {}).get("ticket")
-                if data.get("status") == "failed":
-                    return None
-            return None
-        except Exception as e:
-            print(f"  [Capsolver] error: {e}")
-            return None
-
-
 def _download_image(url):
     if not url:
         return None
@@ -285,7 +285,6 @@ def _generate_tracks(distance):
 
 
 async def _wait_for_captcha(page, timeout=20):
-    """等待验证码出现"""
     selectors = [
         ".tcaptcha", ".yidun_slider", ".nc_iconfont",
         '[class*="captcha"]', '[class*="turing"]',
@@ -339,14 +338,13 @@ async def _find_slider_btn(page):
 
 
 async def _solve_slider_captcha(page, max_attempts=5):
-    """解滑动验证码"""
-    # 如果 capsolver 可用，优先用它
+    """解滑动验证码 - 使用 captcha-recognizer 深度学习库"""
     if CAPSOLVER_KEY:
         ticket = CapsolverSolver.solve(None, page)
         if ticket:
             return True
 
-    solver = BuiltinCaptchaSolver()
+    solver = CaptchaSolver()
 
     for attempt in range(max_attempts):
         try:
@@ -430,12 +428,11 @@ async def _solve_slider_captcha(page, max_attempts=5):
 # 浏览器注册
 # ====================================================================
 async def _register_browser(email, password):
-    """用 Playwright 打开 Oiioii 注册页，填表注册"""
     from playwright.async_api import async_playwright
 
     async with async_playwright() as pw:
         browser = await pw.chromium.launch(
-            headless=True,
+            headless=False,
             args=[
                 "--disable-blink-features=AutomationControlled",
                 "--disable-infobars",
@@ -452,66 +449,14 @@ async def _register_browser(email, password):
         page = await context.new_page()
 
         try:
-            print("    打开 Oiioii 登录页...")
-            await page.goto("https://www.oiioii.ai/login", wait_until="networkidle", timeout=60000)
-            await page.wait_for_timeout(5000)
+            await page.goto("https://www.oiioii.ai/login", wait_until="domcontentloaded", timeout=60000)
+            await page.wait_for_timeout(3000)
 
-            screenshot_path = "debug_login_page.png"
-            await page.screenshot(path=screenshot_path)
-            print(f"    截图已保存: {screenshot_path}")
+            email_tab = page.locator("button:has-text('Email')")
+            await email_tab.click(timeout=15000)
+            await page.wait_for_timeout(2000)
 
-            email_tab = None
-            tab_selectors = [
-                "button:has-text('Email')",
-                "button:has-text('email')",
-                "button:has-text('邮箱')",
-                '[data-testid="email-tab"]',
-                "div[class*='tab']:has-text('Email')",
-                "span:has-text('Email')",
-                "a:has-text('Email')",
-            ]
-            for sel in tab_selectors:
-                try:
-                    loc = page.locator(sel).first
-                    if await loc.is_visible(timeout=3000):
-                        email_tab = loc
-                        print(f"    找到Email标签: {sel}")
-                        break
-                except Exception:
-                    continue
-
-            if not email_tab:
-                print("    未找到Email标签，尝试直接找邮箱输入框...")
-                email_input_direct = page.locator("input[type='email'], input[name='email'], input[placeholder*='email'], input[placeholder*='Email']").first
-                if await email_input_direct.is_visible(timeout=5000):
-                    print("    找到邮箱输入框，跳过标签点击")
-                else:
-                    all_inputs = await page.query_selector_all("input")
-                    print(f"    页面上共找到 {len(all_inputs)} 个input元素")
-                    for idx, inp in enumerate(all_inputs):
-                        try:
-                            inp_type = await inp.get_attribute("type") or ""
-                            inp_name = await inp.get_attribute("name") or ""
-                            inp_placeholder = await inp.get_attribute("placeholder") or ""
-                            print(f"      input[{idx}]: type={inp_type} name={inp_name} placeholder={inp_placeholder}")
-                        except Exception:
-                            pass
-                    all_buttons = await page.query_selector_all("button")
-                    print(f"    页面上共找到 {len(all_buttons)} 个button元素")
-                    for idx, btn in enumerate(all_buttons[:10]):
-                        try:
-                            txt = await btn.text_content()
-                            print(f"      button[{idx}]: {txt.strip()[:50] if txt else '(empty)'}")
-                        except Exception:
-                            pass
-                    return False
-            else:
-                await email_tab.click()
-                await page.wait_for_timeout(2000)
-
-            email_input = page.locator("input[type='email'], input[name='email'], input[placeholder*='email'], input[placeholder*='Email']").first
-            if not await email_input.is_visible(timeout=5000):
-                email_input = page.locator("input").first
+            email_input = page.locator("input[name='email']")
             await email_input.click()
             await page.wait_for_timeout(random.randint(200, 500))
             for char in email:
@@ -519,9 +464,7 @@ async def _register_browser(email, password):
 
             await page.wait_for_timeout(random.randint(200, 500))
 
-            pwd_input = page.locator("input[type='password'], input[name='password']").first
-            if not await pwd_input.is_visible(timeout=5000):
-                pwd_input = page.locator("input").nth(1)
+            pwd_input = page.locator("input[name='password']")
             await pwd_input.click()
             await page.wait_for_timeout(random.randint(200, 500))
             for char in password:
@@ -529,48 +472,20 @@ async def _register_browser(email, password):
 
             await page.wait_for_timeout(1000)
 
-            submit_selectors = [
-                "button:has-text('Login / Sign up')",
-                "button:has-text('Sign up')",
-                "button:has-text('Register')",
-                "button:has-text('注册')",
-                "button:has-text('登录')",
-                "button[type='submit']",
-            ]
-            submit_btn = None
-            for sel in submit_selectors:
-                try:
-                    loc = page.locator(sel).first
-                    if await loc.is_visible(timeout=3000):
-                        submit_btn = loc
-                        print(f"    找到提交按钮: {sel}")
-                        break
-                except Exception:
-                    continue
-
-            if submit_btn:
-                await submit_btn.click()
-            else:
-                print("    未找到提交按钮，尝试回车提交")
-                await page.keyboard.press("Enter")
+            submit_btn = page.locator("button:has-text('Login / Sign up')")
+            await submit_btn.click()
             await page.wait_for_timeout(5000)
 
-            # 处理验证码
             captcha = await _wait_for_captcha(page, timeout=20)
             if captcha:
-                print("    验证码出现，尝试解决...")
                 solved = await _solve_slider_captcha(page, max_attempts=5)
                 if not solved:
-                    print("    ✗ 验证码解了5次都没过")
                     return False
                 await page.wait_for_timeout(3000)
 
-            # 检查是否注册成功
             if "login" not in page.url.lower():
-                print("    注册成功（已跳转）")
                 return True
 
-            # 关掉可能出现的弹窗
             try:
                 close_btn = page.locator('button:has-text("Skip"), button:has-text("跳过"), button[aria-label="Close"]').first
                 await close_btn.click(timeout=5000)
@@ -579,7 +494,6 @@ async def _register_browser(email, password):
                 pass
 
             ok = "login" not in page.url.lower()
-            print(f"    {'注册成功' if ok else '注册失败（还在登录页）'}")
             return ok
 
         except Exception as e:
@@ -601,7 +515,6 @@ def register_one():
         return {"success": False, "error": "TempMail creation failed"}
     print(f"  [2/5] email: {email}")
 
-    # 获取 mail.tm token，用于之后收验证邮件
     mail_token = TempMail.get_token(email, password)
 
     print("  [3/5] 浏览器注册...")
@@ -624,13 +537,12 @@ def register_one():
         if verify_link:
             try:
                 http_req.get(verify_link, timeout=15, allow_redirects=True)
-                print("    邮箱已验证")
             except Exception:
-                print("    验证链接访问失败，可能已自动验证")
+                pass
         else:
-            print("    未收到验证邮件，继续")
+            pass
     else:
-        print("    无法获取 mail.tm token，跳过验证")
+        pass
 
     print("  [5/5] 登录获取积分...")
     r = http_req.post(
@@ -640,7 +552,6 @@ def register_one():
         timeout=15,
     )
     if r.status_code != 200:
-        print(f"    登录失败 (HTTP {r.status_code})")
         return {
             "success": True,
             "email": email,
@@ -654,14 +565,12 @@ def register_one():
     token = r.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
 
-    # 激活 + 积分
     http_req.post(f"{API_BASE}/points/active_user", json={"data": {}}, headers=headers, timeout=15)
 
     r_pts = http_req.post(f"{API_BASE}/points/current_user_points", json={"data": {}}, headers=headers, timeout=15)
     points = r_pts.json().get("data", {}).get("available_limited", 0)
     print(f"    积分: {points}")
 
-    # 创建工作区
     r_ws = http_req.post(f"{API_BASE}/workspace/create_workspace", json={"data": {"name": "pool"}}, headers=headers, timeout=15)
     ws_id = r_ws.json().get("data", {}).get("workspaceId", "")
     if not ws_id:
@@ -669,8 +578,6 @@ def register_one():
         workspaces = r_ws2.json().get("data", {}).get("workspaces", [])
         if workspaces:
             ws_id = workspaces[0].get("workspaceId", "")
-
-    print(f"    工作区: {ws_id or '无'}")
 
     return {
         "success": True,
@@ -759,7 +666,7 @@ def main():
     print("=" * 50)
     print("  Oiioii 自动注册机")
     print(f"  服务器: {SERVER_URL}")
-    print(f"  验证码: {'Capsolver' if CAPSOLVER_KEY else 'OpenCV(内置)'}")
+    print(f"  验证码: {'Capsolver' if CAPSOLVER_KEY else 'captcha-recognizer'}")
     print("=" * 50)
 
     count = args.target if args.continuous else args.count
@@ -775,7 +682,6 @@ def main():
 
     print_summary(results)
 
-    # 保存结果
     out = {
         "time": time.strftime("%Y-%m-%d %H:%M:%S"),
         "server": SERVER_URL,
