@@ -453,16 +453,65 @@ async def _register_browser(email, password):
 
         try:
             print("    打开 Oiioii 登录页...")
-            await page.goto("https://www.oiioii.ai/login", wait_until="domcontentloaded", timeout=60000)
-            await page.wait_for_timeout(3000)
+            await page.goto("https://www.oiioii.ai/login", wait_until="networkidle", timeout=60000)
+            await page.wait_for_timeout(5000)
 
-            # 点 Email 标签
-            email_tab = page.locator("button:has-text('Email')")
-            await email_tab.click(timeout=15000)
-            await page.wait_for_timeout(2000)
+            screenshot_path = "debug_login_page.png"
+            await page.screenshot(path=screenshot_path)
+            print(f"    截图已保存: {screenshot_path}")
 
-            # 填邮箱
-            email_input = page.locator("input[name='email']")
+            email_tab = None
+            tab_selectors = [
+                "button:has-text('Email')",
+                "button:has-text('email')",
+                "button:has-text('邮箱')",
+                '[data-testid="email-tab"]',
+                "div[class*='tab']:has-text('Email')",
+                "span:has-text('Email')",
+                "a:has-text('Email')",
+            ]
+            for sel in tab_selectors:
+                try:
+                    loc = page.locator(sel).first
+                    if await loc.is_visible(timeout=3000):
+                        email_tab = loc
+                        print(f"    找到Email标签: {sel}")
+                        break
+                except Exception:
+                    continue
+
+            if not email_tab:
+                print("    未找到Email标签，尝试直接找邮箱输入框...")
+                email_input_direct = page.locator("input[type='email'], input[name='email'], input[placeholder*='email'], input[placeholder*='Email']").first
+                if await email_input_direct.is_visible(timeout=5000):
+                    print("    找到邮箱输入框，跳过标签点击")
+                else:
+                    all_inputs = await page.query_selector_all("input")
+                    print(f"    页面上共找到 {len(all_inputs)} 个input元素")
+                    for idx, inp in enumerate(all_inputs):
+                        try:
+                            inp_type = await inp.get_attribute("type") or ""
+                            inp_name = await inp.get_attribute("name") or ""
+                            inp_placeholder = await inp.get_attribute("placeholder") or ""
+                            print(f"      input[{idx}]: type={inp_type} name={inp_name} placeholder={inp_placeholder}")
+                        except Exception:
+                            pass
+                    all_buttons = await page.query_selector_all("button")
+                    print(f"    页面上共找到 {len(all_buttons)} 个button元素")
+                    for idx, btn in enumerate(all_buttons[:10]):
+                        try:
+                            txt = await btn.text_content()
+                            print(f"      button[{idx}]: {txt.strip()[:50] if txt else '(empty)'}")
+                        except Exception:
+                            pass
+                    return False
+            else:
+                await email_tab.click()
+                await page.wait_for_timeout(2000)
+
+            email_input = page.locator("input[type='email'], input[name='email'], input[placeholder*='email'], input[placeholder*='Email']").first
+            if not await email_input.is_visible(timeout=5000):
+                email_input = page.locator("input").first
             await email_input.click()
             await page.wait_for_timeout(random.randint(200, 500))
             for char in email:
@@ -470,8 +519,9 @@ async def _register_browser(email, password):
 
             await page.wait_for_timeout(random.randint(200, 500))
 
-            # 填密码
-            pwd_input = page.locator("input[name='password']")
+            pwd_input = page.locator("input[type='password'], input[name='password']").first
+            if not await pwd_input.is_visible(timeout=5000):
+                pwd_input = page.locator("input").nth(1)
             await pwd_input.click()
             await page.wait_for_timeout(random.randint(200, 500))
             for char in password:
@@ -479,9 +529,30 @@ async def _register_browser(email, password):
 
             await page.wait_for_timeout(1000)
 
-            # 点注册按钮
-            submit_btn = page.locator("button:has-text('Login / Sign up')")
-            await submit_btn.click()
+            submit_selectors = [
+                "button:has-text('Login / Sign up')",
+                "button:has-text('Sign up')",
+                "button:has-text('Register')",
+                "button:has-text('注册')",
+                "button:has-text('登录')",
+                "button[type='submit']",
+            ]
+            submit_btn = None
+            for sel in submit_selectors:
+                try:
+                    loc = page.locator(sel).first
+                    if await loc.is_visible(timeout=3000):
+                        submit_btn = loc
+                        print(f"    找到提交按钮: {sel}")
+                        break
+                except Exception:
+                    continue
+
+            if submit_btn:
+                await submit_btn.click()
+            else:
+                print("    未找到提交按钮，尝试回车提交")
+                await page.keyboard.press("Enter")
             await page.wait_for_timeout(5000)
 
             # 处理验证码
