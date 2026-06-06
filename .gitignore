@@ -1,0 +1,17 @@
+node_modules/
+dist/
+__pycache__/
+*.pyc
+.env
+*.db
+data/
+logs/
+output/
+04_OiioiiPool账号池/data/
+04_OiioiiPool账号池/logs/
+04_OiioiiPool账号池/output/
+*.pem
+.idea/
+.vscode/
+*.log
+register_result_*.json
