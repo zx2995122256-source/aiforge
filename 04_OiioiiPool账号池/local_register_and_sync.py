@@ -88,7 +88,7 @@ def main():
     parser.add_argument("--concurrent", type=int, default=1, help="并发注册数（1-3）")
     parser.add_argument("--continuous", action="store_true", help="持续注册模式（达到 target 后停止）")
     parser.add_argument("--target", type=int, default=50, help="连续模式目标数量")
-    parser.add_argument("--server", default=SERVER_URL, help="服务器地址")
+    parser.add_argument("--server", default=None, help="服务器地址")
     args = parser.parse_args()
 
     global SERVER_URL

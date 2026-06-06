@@ -6,9 +6,12 @@ on:
   workflow_dispatch:
     inputs:
       count:
-        description: 'Number of accounts per job'
+        description: 'Accounts per job'
         default: '4'
         required: false
+
+env:
+  SERVER_URL: ${{ secrets.SERVER_URL || 'http://122.51.205.94' }}
 
 jobs:
   register:
@@ -31,25 +34,24 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install playwright requests opencv-python-headless numpy
+          pip install playwright requests opencv-python-headless numpy onnxruntime shapely captcha-recognizer
           playwright install chromium
 
       - name: Install system deps
         run: |
           playwright install-deps chromium
 
-      - name: Run
+      - name: Register & push
         env:
-          SERVER_URL: ${{ secrets.SERVER_URL || 'http://122.51.205.94' }}
-          CAPSOLVER_API_KEY: ${{ secrets.CAPSOLVER_API_KEY }}
+          AIFORGE_SERVER: ${{ secrets.SERVER_URL || 'http://122.51.205.94' }}
         run: |
           COUNT_INPUT="${{ github.event.inputs.count || '4' }}"
-          python "04_OiioiiPool账号池/register_oiioii.py" --count $COUNT_INPUT
+          python "04_OiioiiPool账号池/local_register_and_sync.py" --count $COUNT_INPUT
 
       - name: Upload result
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: result-${{ strategy.job-index }}
-          path: register_result.json
+          path: register_result_*.json
           retention-days: 3

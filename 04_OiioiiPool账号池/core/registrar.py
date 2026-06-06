@@ -208,8 +208,22 @@ class PlaywrightRegistrar:
             await page.goto("https://www.oiioii.ai/login", wait_until="domcontentloaded", timeout=60000)
             await page.wait_for_timeout(3000)
 
-            email_tab = page.locator("button:has-text('Email')")
-            await email_tab.click(timeout=15000)
+            # 点 Email/邮箱 标签
+            email_tabs = [
+                page.locator("button:has-text('Email')"),
+                page.locator("button:has-text('邮箱')"),
+                page.locator("button:has-text('email')"),
+            ]
+            email_tab = None
+            for tab in email_tabs:
+                try:
+                    if await tab.is_visible(timeout=3000):
+                        email_tab = tab
+                        break
+                except Exception:
+                    continue
+            if email_tab:
+                await email_tab.click()
             await page.wait_for_timeout(2000)
 
             email_input = page.locator("input[name='email']")
@@ -228,8 +242,23 @@ class PlaywrightRegistrar:
 
             await page.wait_for_timeout(1000)
 
-            submit_btn = page.locator("button:has-text('Login / Sign up')")
-            await submit_btn.click()
+            submit_btns = [
+                page.locator("button:has-text('Login / Sign up')"),
+                page.locator("button:has-text('Sign up')"),
+                page.locator("button:has-text('注册')"),
+                page.locator("button:has-text('Register')"),
+                page.locator("button[type='submit']"),
+            ]
+            submit_btn = None
+            for btn in submit_btns:
+                try:
+                    if await btn.is_visible(timeout=3000):
+                        submit_btn = btn
+                        break
+                except Exception:
+                    continue
+            if submit_btn:
+                await submit_btn.click()
             await page.wait_for_timeout(5000)
 
             captcha_appeared = await self._wait_for_captcha(page, timeout=20)
