@@ -51,7 +51,7 @@ jobs:
 
   daily_claim:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     if: github.event_name == 'schedule'
     steps:
       - name: Checkout
@@ -67,4 +67,4 @@ jobs:
         env:
           AIFORGE_SERVER: ${{ secrets.SERVER_URL || 'http://122.51.205.94' }}
         run: |
-          curl -s -X POST "$AIFORGE_SERVER/api/pool/daily_claim_all" | python -m json.tool
+          curl -s -X POST "$AIFORGE_SERVER/pool/api/pool/daily_claim_all" --max-time 540 | python -m json.tool
