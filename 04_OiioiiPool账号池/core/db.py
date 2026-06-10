@@ -132,7 +132,7 @@ class AccountDB:
         conn.close()
         return dict(row) if row else None
 
-    _rr_offset = 0
+    _rr_offsets = {"image": 0, "video": 0, "default": 0}
     _rr_lock = threading.Lock()
 
     @staticmethod
@@ -140,18 +140,33 @@ class AccountDB:
                       video_pool: bool = False) -> Optional[dict]:
         conn = get_conn()
         order = "points_remaining ASC" if prefer_lowest else "points_remaining DESC"
+        # 排除60秒内刚用过的账号，避免连续分配给同一账号
+        recent_cutoff = time.time() - 60
         rows = conn.execute(
             "SELECT * FROM accounts "
             "WHERE status = 'active' AND points_remaining >= ? "
+            "AND (last_used_at < ? OR last_used_at = 0) "
             f"ORDER BY {order}",
-            (min_points,)
+            (min_points, recent_cutoff)
         ).fetchall()
         conn.close()
         if not rows:
-            return None
+            # fallback: 不排除最近使用的
+            conn = get_conn()
+            rows = conn.execute(
+                "SELECT * FROM accounts "
+                "WHERE status = 'active' AND points_remaining >= ? "
+                f"ORDER BY {order}",
+                (min_points,)
+            ).fetchall()
+            conn.close()
+            if not rows:
+                return None
+        key = "video" if video_pool else ("image" if prefer_lowest else "default")
         with AccountDB._rr_lock:
-            idx = AccountDB._rr_offset % len(rows)
-            AccountDB._rr_offset += 1
+            offset = AccountDB._rr_offsets.get(key, 0)
+            idx = offset % len(rows)
+            AccountDB._rr_offsets[key] = offset + 1
         return dict(rows[idx])
 
     @staticmethod
@@ -167,9 +182,11 @@ class AccountDB:
         conn.close()
         if not rows:
             return None
+        key = "video" if not prefer_lowest else "image"
         with AccountDB._rr_lock:
-            idx = AccountDB._rr_offset % len(rows)
-            AccountDB._rr_offset += 1
+            offset = AccountDB._rr_offsets.get(key, 0)
+            idx = offset % len(rows)
+            AccountDB._rr_offsets[key] = offset + 1
         return dict(rows[idx])
 
     @staticmethod
@@ -363,6 +380,13 @@ class TaskDB:
         ).fetchall()
         conn.close()
         return [dict(r) for r in rows]
+
+    @staticmethod
+    def delete(task_db_id: int):
+        conn = get_conn()
+        conn.execute("DELETE FROM tasks WHERE id = ?", (task_db_id,))
+        conn.commit()
+        conn.close()
 
     @staticmethod
     def stats():

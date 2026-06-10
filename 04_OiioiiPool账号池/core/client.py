@@ -18,6 +18,12 @@ class OiioiiClient:
         self.token_expiry = 0
         self._session = requests.Session()
         self._session.headers.update({"Content-Type": "application/json"})
+        # 限制连接池大小，避免socket堆积
+        adapter = requests.adapters.HTTPAdapter(
+            pool_connections=2, pool_maxsize=2, max_retries=1
+        )
+        self._session.mount("https://", adapter)
+        self._session.mount("http://", adapter)
 
     @property
     def _headers(self):
@@ -191,6 +197,9 @@ class OiioiiClient:
             }],
             "toolArgs": tool_args
         }
+        # Nano模型aspectRatio放body顶层而非toolArgs（toolArgs里会报INVALID_TOOL_ARGS）
+        if method == "generate_image_nano" and ratio:
+            body["aspectRatio"] = ratio
         print(f"[Client] generate_image: model={model_name} ratio={ratio} refs={len(reference_images or [])}")
         r = self._session.post(f"{API_BASE}/media/batch_gen/submit", json=body, headers=self._headers, timeout=30)
         resp = r.json()
@@ -206,7 +215,8 @@ class OiioiiClient:
                        ratio: str = "16:9", duration: int = 5,
                        resolution: str = "720p",
                        reference_images: list = None,
-                       reference_video: str = "") -> Tuple[bool, str]:
+                       reference_video: str = "",
+                       reference_map: dict = None) -> Tuple[bool, str]:
         if not self.ensure_token() or not self.ensure_workspace():
             return False, "Login or workspace failed"
         model_info = VIDEO_MODELS_DIRECT.get(model_name)
@@ -228,13 +238,30 @@ class OiioiiClient:
         if reference_images:
             refs = self._refs_to_data_urls(reference_images, model_name)
             if refs:
-                body["images"] = refs
+                # 用referenceImages（oiioii前端统一用此参数名，后端自动转换为各模型需要的格式）
+                body["referenceImages"] = refs
+        # reference_map: 把prompt中的@标签映射到参考图URL
+        if reference_map:
+            # 需要把URL转成data_url，和referenceImages保持一致
+            resolved_map = {}
+            for tag, url in reference_map.items():
+                data_urls = self._refs_to_data_urls([url], model_name)
+                if data_urls:
+                    resolved_map[tag] = data_urls[0]
+            if resolved_map:
+                body["referenceMap"] = resolved_map
         if reference_video and model_info.get("video_ref"):
             video_uri = self._resolve_video_ref(reference_video)
             if video_uri:
                 body["videoUrl"] = video_uri
             else:
                 print(f"[Client] WARNING: could not resolve video ref: {reference_video[:60]}")
+        # generateMode: 有参考图/视频时必须传，否则oiioii默认text2Video会忽略参考图
+        if body.get("referenceImages") or body.get("videoUrl") or body.get("referenceMap"):
+            if body.get("videoUrl") and model_info.get("video_ref"):
+                body["generateMode"] = "omni2Video"
+            else:
+                body["generateMode"] = "image2Video"
         print(f"[Client] generate_video: model={model_name} duration={duration}s ratio={ratio} refs={len(reference_images or [])} videoRef={bool(reference_video)}")
         r = self._session.post(f"{API_BASE}/media/video_generate/submit", json=body, headers=self._headers, timeout=30)
         resp = r.json()
@@ -249,41 +276,249 @@ class OiioiiClient:
             return False, "INSUFFICIENT_POINTS", False
         return False, err or f"HTTP {r.status_code}", False
 
+    # 不同编辑类型对应的mcpMethodName
+    _EDIT_METHOD_MAP = {
+        "remove_bg_comfy": "remove_bg_comfy",
+        "image_inpaint": "generate_image_gpt_image2",
+        "image_outpaint": "generate_image_gpt_image2",
+        "image_relight": "generate_image_gpt_image2",
+    }
+
+    def image_edit(self, image_uri: str, generate_type: str, prompt: str = "",
+                   ratio: str = "1:1", resolution: str = "2K",
+                   reference_images: list = None) -> Tuple[bool, str]:
+        """图片编辑：局部重绘/外扩/重光照/抠图等。
+
+        generate_type: image_inpaint, image_outpaint, image_relight, remove_bg_comfy
+        """
+        if not self.ensure_token() or not self.ensure_workspace():
+            return False, "Login or workspace failed"
+
+        # 根据编辑类型选择mcpMethodName
+        mcp_method = self._EDIT_METHOD_MAP.get(generate_type, "generate_image_gpt_image2")
+
+        # remove_bg_comfy不需要prompt，但上游API可能要求非空，给个默认值
+        effective_prompt = prompt
+        if not effective_prompt and generate_type == "remove_bg_comfy":
+            effective_prompt = "Remove the background from this image, make it transparent"
+
+        body = {
+            "workspaceId": self.workspace_id,
+            "imageUri": image_uri,
+            "mcpMethodName": mcp_method,
+            "prompt": effective_prompt,
+            "generateType": generate_type,
+            "aspectRatio": ratio,
+            "resolution": resolution,
+        }
+        if reference_images:
+            refs = self._refs_to_data_urls(reference_images, "")
+            if refs:
+                body["referenceImages"] = refs
+
+        print(f"[Client] image_edit: type={generate_type} method={mcp_method} prompt={effective_prompt[:30]}")
+        r = self._session.post(f"{API_BASE}/media/image_edit/submit", json=body, headers=self._headers, timeout=30)
+        resp = r.json()
+        ok = resp.get("success", False)
+        err = resp.get("error", "")
+        tid = resp.get("taskId", "")
+        if ok:
+            return True, tid
+        if err == "INSUFFICIENT_POINTS":
+            return False, "INSUFFICIENT_POINTS"
+        return False, err or f"HTTP {r.status_code}"
+
+    def image_enhance(self, image_uri: str, resolution: str = "4K") -> Tuple[bool, str]:
+        """图片高清化/超分辨率。"""
+        if not self.ensure_token() or not self.ensure_workspace():
+            return False, "Login or workspace failed"
+
+        body = {
+            "workspaceId": self.workspace_id,
+            "imageUri": image_uri,
+            "resolution": resolution,
+        }
+        print(f"[Client] image_enhance: resolution={resolution}")
+        r = self._session.post(f"{API_BASE}/media/image_enhance/submit", json=body, headers=self._headers, timeout=30)
+        resp = r.json()
+        ok = resp.get("success", False)
+        err = resp.get("error", "")
+        tid = resp.get("taskId", "")
+        if ok:
+            return True, tid
+        if err == "INSUFFICIENT_POINTS":
+            return False, "INSUFFICIENT_POINTS"
+        return False, err or f"HTTP {r.status_code}"
+
+    def prompt_reverse(self, image_uri: str) -> Tuple[bool, str]:
+        """提示词反推：从图片反推prompt。"""
+        if not self.ensure_token() or not self.ensure_workspace():
+            return False, "Login or workspace failed"
+
+        body = {
+            "workspaceId": self.workspace_id,
+            "imageUri": image_uri,
+        }
+        print(f"[Client] prompt_reverse")
+        r = self._session.post(f"{API_BASE}/media/prompt_reverse/submit", json=body, headers=self._headers, timeout=30)
+        resp = r.json()
+        ok = resp.get("success", False)
+        err = resp.get("error", "")
+        tid = resp.get("taskId", "")
+        if ok:
+            return True, tid
+        if err == "INSUFFICIENT_POINTS":
+            return False, "INSUFFICIENT_POINTS"
+        return False, err or f"HTTP {r.status_code}"
+
+    def video_combine(self, video_uris: list, output_name: str = "combined") -> Tuple[bool, str]:
+        """视频合并/拼接。"""
+        if not self.ensure_token() or not self.ensure_workspace():
+            return False, "Login or workspace failed"
+        body = {
+            "workspaceId": self.workspace_id,
+            "videoUris": video_uris,
+            "outputName": output_name,
+        }
+        print(f"[Client] video_combine: {len(video_uris)} videos")
+        r = self._session.post(f"{API_BASE}/media/video_combine/submit", json=body, headers=self._headers, timeout=30)
+        resp = r.json()
+        ok = resp.get("success", False)
+        err = resp.get("error", "")
+        tid = resp.get("taskId", "")
+        if ok:
+            return True, tid
+        if err == "INSUFFICIENT_POINTS":
+            return False, "INSUFFICIENT_POINTS"
+        return False, err or f"HTTP {r.status_code}"
+
+    def video_trim(self, video_uri: str, trim_start_ms: int, trim_end_ms: int) -> Tuple[bool, str]:
+        """视频裁剪。trim_start_ms/trim_end_ms 是毫秒。"""
+        if not self.ensure_token() or not self.ensure_workspace():
+            return False, "Login or workspace failed"
+        body = {
+            "workspaceId": self.workspace_id,
+            "videoUri": video_uri,
+            "trimStartMs": trim_start_ms,
+            "trimEndMs": trim_end_ms,
+        }
+        print(f"[Client] video_trim: {trim_start_ms}-{trim_end_ms}ms")
+        r = self._session.post(f"{API_BASE}/media/video_trim", json=body, headers=self._headers, timeout=30)
+        resp = r.json()
+        ok = resp.get("success", False)
+        err = resp.get("error", "")
+        tid = resp.get("taskId", "")
+        if ok:
+            return True, tid
+        if err == "INSUFFICIENT_POINTS":
+            return False, "INSUFFICIENT_POINTS"
+        return False, err or f"HTTP {r.status_code}"
+
+    def video_subtitle_erase(self, video_uri: str) -> Tuple[bool, str]:
+        """视频字幕擦除。"""
+        if not self.ensure_token() or not self.ensure_workspace():
+            return False, "Login or workspace failed"
+        body = {
+            "workspaceId": self.workspace_id,
+            "videoUri": video_uri,
+        }
+        print(f"[Client] video_subtitle_erase")
+        r = self._session.post(f"{API_BASE}/media/video_subtitle_erase/submit", json=body, headers=self._headers, timeout=30)
+        resp = r.json()
+        ok = resp.get("success", False)
+        err = resp.get("error", "")
+        tid = resp.get("taskId", "")
+        if ok:
+            return True, tid
+        if err == "INSUFFICIENT_POINTS":
+            return False, "INSUFFICIENT_POINTS"
+        return False, err or f"HTTP {r.status_code}"
+
+    def video_enhance(self, video_uri: str, resolution: str = "1080p") -> Tuple[bool, str]:
+        """视频增强/高清化。"""
+        if not self.ensure_token() or not self.ensure_workspace():
+            return False, "Login or workspace failed"
+        body = {
+            "workspaceId": self.workspace_id,
+            "videoUri": video_uri,
+            "resolution": resolution,
+            "mode": "enhance",
+        }
+        print(f"[Client] video_enhance: resolution={resolution}")
+        r = self._session.post(f"{API_BASE}/media/video_enhance/submit", json=body, headers=self._headers, timeout=30)
+        resp = r.json()
+        ok = resp.get("success", False)
+        err = resp.get("error", "")
+        tid = resp.get("taskId", "")
+        if ok:
+            return True, tid
+        if err == "INSUFFICIENT_POINTS":
+            return False, "INSUFFICIENT_POINTS"
+        return False, err or f"HTTP {r.status_code}"
+
+    def generate_music(self, prompt: str, style: str = "", duration: int = 0,
+                       instrumental: bool = False) -> Tuple[bool, str]:
+        """音乐生成（Suno）。
+        
+        prompt: 音乐描述
+        style: 音乐风格（如pop, rock, jazz等）
+        duration: 时长秒数（0=自动）
+        instrumental: 是否纯音乐
+        """
+        if not self.ensure_token() or not self.ensure_workspace():
+            return False, "Login or workspace failed"
+
+        full_prompt = prompt
+        if style:
+            full_prompt = f"{prompt}, style: {style}"
+
+        body = {
+            "workspaceId": self.workspace_id,
+            "tasks": [{"prompt": full_prompt, "images": [], "audios": []}],
+            "models": [{
+                "mcpMethodName": "generate_music_suno",
+                "version": "suno_v4",
+                "label": "Suno Music"
+            }],
+            "toolArgs": {
+                "instrumental": instrumental,
+            }
+        }
+        if duration > 0:
+            body["toolArgs"]["duration"] = duration
+
+        print(f"[Client] generate_music: prompt={prompt[:40]} style={style} instrumental={instrumental}")
+        r = self._session.post(f"{API_BASE}/media/batch_gen/submit", json=body, headers=self._headers, timeout=30)
+        resp = r.json()
+        ok = resp.get("success", False)
+        err = resp.get("error", "")
+        batch_id = resp.get("batchId", resp.get("taskId", ""))
+        print(f"[Client] generate_music response: success={ok} batchId={batch_id[:40]} error={err[:60]}")
+        if ok:
+            return True, batch_id
+        if err == "INSUFFICIENT_POINTS":
+            return False, "INSUFFICIENT_POINTS"
+        return False, err or f"HTTP {r.status_code}"
+
     def _refs_to_data_urls(self, refs: list, model_name: str = "") -> list:
+        """将参考图URL转换为oiioii可接受的格式。
+        
+        oiioii.ai 支持 hogi:// URI 和公开 HTTP URL 作为参考图输入。
+        用户上传到我们服务器的图片已有公开URL，直接传URL给oiioii，
+        无需重新上传。
+        """
         result = []
         for url in refs:
-            data = None
+            if not url:
+                continue
             fname = os.path.basename(url.split("?")[0])
-            local_path = os.path.join(REFS_DIR, fname)
-            if os.path.exists(local_path):
-                with open(local_path, "rb") as f:
-                    data = f.read()
-            else:
-                for rf in os.listdir(REFS_DIR):
-                    if fname in rf or rf in url:
-                        local_path = os.path.join(REFS_DIR, rf)
-                        with open(local_path, "rb") as f:
-                            data = f.read()
-                        break
-            if data is None:
-                try:
-                    r = requests.get(url, timeout=10)
-                    if r.status_code == 200:
-                        data = r.content
-                except Exception:
-                    pass
-            if data:
-                hogi_uri = self._upload_to_oiioii(data, fname)
-                if hogi_uri:
-                    result.append(hogi_uri)
-                else:
-                    ext = os.path.splitext(fname)[1].lower()
-                    mime = {"png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg",
-                            "webp": "image/webp", "gif": "image/gif", "bmp": "image/bmp"}.get(ext.lstrip("."), "image/png")
-                    b64 = base64.b64encode(data).decode("ascii")
-                    result.append(f"data:{mime};base64,{b64}")
-            else:
+            if url.startswith("hogi://"):
                 result.append(url)
+            elif url.startswith("http://") or url.startswith("https://"):
+                result.append(url)
+            else:
+                # 本地路径 → 公开 HTTP URL（oiioii 自行抓取）
+                result.append(f"http://122.51.205.94/api/gen/refs/{fname}")
         return result
 
     def _resolve_video_ref(self, ref: str) -> str:
@@ -306,7 +541,7 @@ class OiioiiClient:
                     break
         if data is None:
             try:
-                r = requests.get(ref, timeout=30)
+                r = self._session.get(ref, timeout=30)
                 if r.status_code == 200:
                     data = r.content
             except Exception:
@@ -320,25 +555,38 @@ class OiioiiClient:
         return ""
 
     def _upload_to_oiioii(self, file_data: bytes, filename: str) -> str:
-        if not self.ensure_token():
-            return ""
-        ext = os.path.splitext(filename)[1].lower()
-        file_type = {"png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg",
-                     "webp": "image/webp", "gif": "image/gif", "bmp": "image/bmp"}.get(ext.lstrip("."), "image/png")
-        b64 = base64.b64encode(file_data).decode("ascii")
-        body = {"fileBlob": b64, "fileType": file_type}
-        try:
-            r = self._session.post(f"{API_BASE}/res/upload_file", json=body, headers=self._headers, timeout=30)
-            if r.status_code == 200:
-                resp = r.json()
-                if resp.get("code") == "SUCCESS":
-                    uri = resp.get("data", {}).get("uri", "")
-                    if uri:
-                        print(f"[Client] _upload_to_oiioii: uploaded {filename} -> {uri[:50]}")
-                        return uri
-            print(f"[Client] _upload_to_oiioii: failed for {filename}: {r.status_code} {r.text[:100]}")
-        except Exception as e:
-            print(f"[Client] _upload_to_oiioii: error: {e}")
+        size_kb = len(file_data) / 1024
+        timeout = max(60, int(size_kb / 50))  # 至少60s，大文件自动加时
+        for attempt in range(3):
+            if not self.ensure_token():
+                if attempt < 2:
+                    time.sleep(2)
+                    continue
+                return ""
+            ext = os.path.splitext(filename)[1].lower()
+            file_type = {"png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg",
+                         "webp": "image/webp", "gif": "image/gif", "bmp": "image/bmp"}.get(ext.lstrip("."), "image/png")
+            b64 = base64.b64encode(file_data).decode("ascii")
+            body = {"fileBlob": b64, "fileType": file_type}
+            try:
+                r = self._session.post(f"{API_BASE}/res/upload_file", json=body, headers=self._headers, timeout=timeout)
+                if r.status_code == 200:
+                    resp = r.json()
+                    if resp.get("code") == "SUCCESS":
+                        uri = resp.get("data", {}).get("uri", "")
+                        if uri:
+                            print(f"[Client] _upload_to_oiioii: uploaded {filename} ({size_kb:.0f}KB) -> {uri[:50]}")
+                            return uri
+                if r.status_code == 401 and attempt < 2:
+                    # Token expired, retry after re-login
+                    self.token = ""
+                    time.sleep(1)
+                    continue
+                print(f"[Client] _upload_to_oiioii: attempt {attempt+1} failed ({r.status_code})")
+            except Exception as e:
+                print(f"[Client] _upload_to_oiioii: attempt {attempt+1} error: {e}")
+            if attempt < 2:
+                time.sleep(3)
         return ""
 
     def upload_video_file(self, file_data: bytes, filename: str) -> str:
@@ -582,7 +830,7 @@ class OiioiiClient:
 
         print(f"[Client] download: {uri[:60]}")
         try:
-            r = requests.get(dl_url, params=dl_params, headers=dl_headers, timeout=120)
+            r = self._session.get(dl_url, params=dl_params, headers=dl_headers, timeout=120)
             if r.status_code == 200 and len(r.content) > 100:
                 if not filename:
                     ext = ".mp4" if "video" in uri else ".png"
@@ -595,6 +843,24 @@ class OiioiiClient:
             return False, f"Download failed: HTTP {r.status_code} size={len(r.content)}"
         except Exception as e:
             return False, f"Download error: {e}"
+
+    def fetch_model_pricings(self) -> list:
+        """从oiioii.ai获取所有模型的配置和定价信息。"""
+        if not self.ensure_token():
+            return []
+        try:
+            r = self._session.post(
+                f"{API_BASE}/points/mcp_model_pricings",
+                json={"data": {}}, headers=self._headers, timeout=15
+            )
+            if r.status_code == 200:
+                pricings = r.json().get("data", {}).get("pricings", [])
+                print(f"[Client] fetch_model_pricings: got {len(pricings)} models")
+                return pricings
+            print(f"[Client] fetch_model_pricings failed: {r.status_code}")
+        except Exception as e:
+            print(f"[Client] fetch_model_pricings error: {e}")
+        return []
 
     def health_check(self) -> dict:
         result = {"alive": False, "points": -1, "workspace": False}

@@ -110,7 +110,7 @@ class GenEngine:
     def submit(self, task_type: str, model_name: str, prompt: str,
                ratio: str = "16:9", resolution: str = "2K",
                duration: int = 5, reference_images: list = None,
-               reference_video: str = "") -> dict:
+               reference_video: str = "", reference_map: dict = None) -> dict:
         model_info = (IMAGE_MODELS if task_type == "image" else VIDEO_MODELS_DIRECT).get(model_name)
         if not model_info:
             return {"success": False, "error": f"Unknown model: {model_name}"}
@@ -118,13 +118,14 @@ class GenEngine:
         cost = get_model_cost(model_name, duration, resolution)
 
         min_points = cost
+        is_video = (task_type == "video")
 
         for attempt in range(5):
             client = self._ensure_available_account(
                 min_points,
                 prefer_lowest=(task_type == "image"),
-                video_pool=False,
-                fallback_any=True
+                video_pool=is_video,
+                fallback_any=(not is_video)  # 视频任务不 fallback，避免选低积分账号
             )
             if not client:
                 return {"success": False, "error": "No available account and auto-register failed"}
@@ -168,7 +169,7 @@ class GenEngine:
             args=(task_db_id, task_type, model_name, prompt, ratio,
                   resolution, duration, client, real_pts, cost,
                   reference_images, model_info.get("timeout", 300), min_points,
-                  reference_video),
+                  reference_video, reference_map),
             daemon=True
         )
         t.start()
@@ -178,7 +179,8 @@ class GenEngine:
                      prompt: str, ratio: str, resolution: str, duration: int,
                      client: OiioiiClient, points_before: int, cost: int,
                      reference_images: list = None, model_timeout: int = 300,
-                     min_points: int = 0, reference_video: str = ""):
+                     min_points: int = 0, reference_video: str = "",
+                     reference_map: dict = None):
         """提交阶段：调 Oiioii API 提交任务，成功后注册到轮询表"""
         with self._submit_semaphore:
             TaskDB.update_status(task_db_id, "processing")
@@ -203,7 +205,8 @@ class GenEngine:
                     ok, result, manual_refresh = client.generate_video(
                         prompt, model_name, ratio, duration, resolution,
                         reference_images=reference_images,
-                        reference_video=reference_video)
+                        reference_video=reference_video,
+                        reference_map=reference_map)
                     if reference_images:
                         uploaded_img_refs = client._refs_to_data_urls(reference_images, model_name)
                         skip_uris.update(uploaded_img_refs)
@@ -264,6 +267,15 @@ class GenEngine:
                         "submitted_at": time.time(),
                         "batch_done": False,  # batch_video 是否已尝试
                         "claim_retries": 0,   # uri 抢占重试次数
+                        "fail_count": 0,      # 失败重试次数
+                        # 重试所需的参数
+                        "model_name": model_name,
+                        "min_points": min_points,
+                        "duration": duration,
+                        "resolution": resolution,
+                        "ratio": ratio,
+                        "reference_images": reference_images,
+                        "reference_video": reference_video,
                     }
 
             except Exception as e:
@@ -332,6 +344,10 @@ class GenEngine:
                 completed_ids.append(task_db_id)
                 continue
 
+            # manualRefresh 任务：前 45 秒跳过轮询，给 API 留出生成时间
+            if info.get("manual_refresh") and elapsed < 45:
+                continue
+
             try:
                 # 视频先尝试 batch_video 非阻塞查询
                 if task_type == "video" and remote_task_id and not info["batch_done"]:
@@ -345,12 +361,21 @@ class GenEngine:
                             skip_uris.add(uri)
                             info["claim_retries"] += 1
                     elif status == "failed":
-                        AccountDB.refund_points(client.account_id, cost)
-                        TaskDB.update_status(task_db_id, "failed",
-                                             task_id=remote_task_id, error_message=uri)
-                        self._notify(task_db_id, "failed", uri)
-                        completed_ids.append(task_db_id)
-                        continue
+                        # 可重试错误：不立即失败，让下面的通用 check_result_once 再确认一次
+                        retriable_batch = ("Internal Error" in str(uri) or
+                                           "No taskId" in str(uri) or
+                                           "Connection aborted" in str(uri))
+                        if retriable_batch:
+                            info["batch_done"] = True  # 切换到 check_result
+                            print(f"[Engine] Task #{task_db_id}: batch_video fail (retriable), switching to check_result")
+                            # 不加入 completed_ids，下面 check_result_once 会继续处理
+                        else:
+                            AccountDB.refund_points(client.account_id, cost)
+                            TaskDB.update_status(task_db_id, "failed",
+                                                 task_id=remote_task_id, error_message=uri)
+                            self._notify(task_db_id, "failed", uri)
+                            completed_ids.append(task_db_id)
+                            continue
                     else:
                         # batch 还没结果，超过一半超时后切换到 poll_result
                         if elapsed > timeout // 2:
@@ -379,11 +404,68 @@ class GenEngine:
                             self._notify(task_db_id, "failed", "URI claim conflict")
                             completed_ids.append(task_db_id)
                 elif status == "failed":
-                    AccountDB.refund_points(client.account_id, cost)
-                    TaskDB.update_status(task_db_id, "failed",
-                                         task_id=remote_task_id, error_message=uri)
-                    self._notify(task_db_id, "failed", uri)
-                    completed_ids.append(task_db_id)
+                    # 可重试错误：换账号重试
+                    retriable = ("Internal Error" in str(uri) or
+                                 "No taskId" in str(uri) or
+                                 "Connection aborted" in str(uri) or
+                                 "Generation job finished with state: FAILED" in str(uri) or
+                                 "timed out" in str(uri).lower() or
+                                 "timeout" in str(uri).lower())
+                    info["fail_count"] = info.get("fail_count", 0) + 1
+                    should_retry = retriable and info["fail_count"] <= 2
+                    retried = False
+                    if should_retry:
+                        print(f"[Engine] Task #{task_db_id}: transient fail (#{info['fail_count']}), retrying with different account. error={str(uri)[:80]}")
+                        AccountDB.refund_points(client.account_id, cost)
+                        # 获取新账号重试
+                        retry_min = info.get("min_points", cost)
+                        new_client = self._ensure_available_account(retry_min, prefer_lowest=(task_type == "image"),
+                                                                     video_pool=False, fallback_any=True)
+                        if new_client and new_client.account_id != client.account_id:
+                            if AccountDB.try_deduct_points(new_client.account_id, cost):
+                                # 重新提交
+                                new_remote_id = ""
+                                if task_type == "image":
+                                    ok, new_remote_id, _ = new_client.generate_image(
+                                        prompt=TaskDB.get_by_id(task_db_id)["prompt"],
+                                        model_name=info.get("model_name", ""),
+                                        ratio=info.get("ratio", "16:9"),
+                                        resolution=info.get("resolution", "720p"),
+                                        reference_images=info.get("reference_images", []))
+                                else:
+                                    ok, new_remote_id, _ = new_client.generate_video(
+                                        prompt=TaskDB.get_by_id(task_db_id)["prompt"],
+                                        model_name=info.get("model_name", ""),
+                                        ratio=info.get("ratio", "16:9"),
+                                        duration=info.get("duration", 5),
+                                        resolution=info.get("resolution", "720p"),
+                                        reference_images=info.get("reference_images", []),
+                                        reference_video=info.get("reference_video", ""))
+                                if ok and new_remote_id:
+                                    print(f"[Engine] Task #{task_db_id}: retry submitted, new remote_id={new_remote_id}, account=#{new_client.account_id}")
+                                    # 更新轮询表
+                                    info["client"] = new_client
+                                    info["remote_task_id"] = new_remote_id
+                                    info["submitted_at"] = time.time()
+                                    info["batch_done"] = False
+                                    info["skip_uris"] = new_client.get_known_uris()
+                                    info["cost"] = cost
+                                    info["points_before"] = new_client.get_points()
+                                    TaskDB.update_status(task_db_id, "processing", task_id=new_remote_id)
+                                    retried = True  # 继续轮询，不加入 completed_ids
+                                else:
+                                    AccountDB.refund_points(new_client.account_id, cost)
+                                    print(f"[Engine] Task #{task_db_id}: retry submit failed: {new_remote_id}")
+                            else:
+                                print(f"[Engine] Task #{task_db_id}: retry deduct failed")
+                        if info["fail_count"] > 2:
+                            print(f"[Engine] Task #{task_db_id}: max retries reached, marking failed")
+                    if not retried:
+                        AccountDB.refund_points(client.account_id, cost)
+                        TaskDB.update_status(task_db_id, "failed",
+                                             task_id=remote_task_id, error_message=uri)
+                        self._notify(task_db_id, "failed", uri)
+                        completed_ids.append(task_db_id)
 
             except Exception as e:
                 print(f"[Engine] Task #{task_db_id}: poll error - {e}")

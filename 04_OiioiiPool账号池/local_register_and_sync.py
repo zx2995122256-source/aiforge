@@ -32,7 +32,7 @@ def push_account_to_server(email: str, password: str) -> bool:
     import requests
     try:
         r = requests.post(
-            f"{SERVER_URL}/pool/api/pool/add",
+            f"{SERVER_URL}/api/pool/add",
             json={"email": email, "password": password},
             timeout=30,
         )
@@ -45,7 +45,7 @@ def push_account_to_server(email: str, password: str) -> bool:
             print(f"  ✗ 推送失败 (HTTP {r.status_code}): {error}")
             return False
     except requests.exceptions.ConnectionError:
-        print(f"  ✗ 无法连接到服务器 {SERVER_URL}/pool/api/pool/add")
+        print(f"  ✗ 无法连接到服务器 {SERVER_URL}/api/pool/add")
         return False
     except Exception as e:
         print(f"  ✗ 推送异常: {e}")

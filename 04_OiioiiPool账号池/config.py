@@ -115,102 +115,71 @@ RESOLUTION_SCALE = {"720p": 1.0, "1080p": 1.6, "2K": 1.6, "4K": 2.5}
 
 IMAGE_MODELS = {
     "GPT-Image2": {"method": "generate_image_gpt_image2", "version": "gpt_image2", "cost_base": 7,
-                   "ratios": ["1:1", "16:9", "9:16", "3:2", "2:3"], "resolutions": ["1K", "2K", "4K"], "ref_max": 9,
-                   "res_scale": {"1K": 1.0, "2K": 1.0, "4K": 1.857}},
+                   "ratios": ["1:1", "2:3", "3:2", "9:16", "16:9", "3:4", "4:3", "Auto"], "resolutions": ["2K", "4K"], "ref_max": 10,
+                   "res_scale": {"2K": 1.0, "4K": 1.857}},
     "Nano Pro": {"method": "generate_image_nano", "version": "nanopro", "cost_base": 7,
-                 "ratios": ["1:1", "16:9", "9:16", "3:2", "2:3"], "resolutions": ["1K", "2K"], "ref_max": 1},
+                 "ratios": ["1:1", "16:9", "9:16", "4:3", "3:4", "Auto"], "resolutions": ["2K", "4K"], "ref_max": 9},
     "Nano 2": {"method": "generate_image_nano", "version": "nano2", "cost_base": 7,
-               "ratios": ["1:1", "16:9", "9:16", "3:2", "2:3"], "resolutions": ["1K", "2K"], "ref_max": 1},
+               "ratios": ["16:9", "9:16", "4:3", "3:4", "1:1", "Auto"], "resolutions": ["2K", "4K"], "ref_max": 9},
     "Niji7": {"method": "generate_image_midjourney", "version": "niji7", "cost_base": 7,
-              "ratios": ["1:1", "16:9", "9:16", "3:2", "2:3"], "resolutions": ["1K", "2K"], "ref_max": 1},
+              "ratios": ["1:1", "16:9", "9:16", "4:3", "3:4"], "resolutions": ["1K", "2K"], "ref_max": 9},
     "Niji6": {"method": "generate_image_midjourney", "version": "niji6", "cost_base": 7,
-              "ratios": ["1:1", "16:9", "9:16", "3:2", "2:3"], "resolutions": ["1K", "2K"], "ref_max": 1},
+              "ratios": ["1:1", "16:9", "9:16", "4:3", "3:4"], "resolutions": ["1K", "2K"], "ref_max": 9},
     "Seedream 5.0": {"method": "generate_image_seedream50", "version": "seedream50", "cost_base": 7,
-                     "ratios": ["1:1", "16:9", "9:16", "3:2", "2:3"], "resolutions": ["1K", "2K"], "ref_max": 1},
+                     "ratios": ["1:1", "4:3", "3:4", "16:9", "9:16", "3:2", "2:3", "21:9", "Auto"], "resolutions": ["2K", "3K", "4K"], "ref_max": 9},
     "Seedream 4.5": {"method": "generate_image_seedream45", "version": "seedream45", "cost_base": 7,
-                     "ratios": ["1:1", "16:9", "9:16", "3:2", "2:3"], "resolutions": ["1K", "2K"], "ref_max": 1},
-    "Flux": {"method": "generate_image_flux", "version": "flux", "cost_base": 7,
-             "ratios": ["1:1", "16:9", "9:16", "3:2", "2:3"], "resolutions": ["1K", "2K", "4K"], "ref_max": 1,
-             "res_scale": {"1K": 1.0, "2K": 1.0, "4K": 1.857}},
+                     "ratios": ["1:1", "4:3", "3:4", "16:9", "9:16", "3:2", "2:3", "21:9", "Auto"], "resolutions": ["2K", "4K"], "ref_max": 9},
     "NovelAI": {"method": "generate_image_novelai", "version": None, "cost_base": 7,
-                "ratios": ["1:1", "16:9", "9:16", "3:2", "2:3"], "resolutions": ["1K", "2K"], "ref_max": 1},
+                "ratios": ["9:16", "16:9", "1:1", "2:3", "3:2"], "resolutions": ["1K"], "ref_max": 9},
     "Gpt 4o": {"method": "generate_image_gpt4o", "version": None, "cost_base": 7,
-               "ratios": ["1:1", "16:9", "9:16", "3:2", "2:3"], "resolutions": ["1K", "2K"], "ref_max": 9},
+               "ratios": ["1:1", "3:2", "2:3"], "resolutions": ["1K"], "ref_max": 0},
 }
 
 VIDEO_MODELS_DIRECT = {
     "Vidu Q2": {
         "method": "generate_video_vidu", "version": "viduQ2", "cost_base": 25,
         "cost_duration_scale": {5: 1.0, 8: 1.6},
-        "default_duration": 5, "durations": [5, 8], "ratios": ["16:9", "9:16", "1:1"],
+        "default_duration": 5, "durations": [5, 6, 7, 8], "ratios": ["16:9", "9:16", "1:1"],
         "resolutions": ["720p", "1080p"],
-        "ref_max": 0, "timeout": 300,
-    },
-    "Vidu Q3 Pro": {
-        "method": "generate_video_vidu", "version": "viduQ3", "cost_base": 30,
-        "cost_duration_scale": {5: 1.0, 10: 2.0, 15: 3.0},
-        "default_duration": 5, "durations": [5, 10, 15], "ratios": ["16:9", "9:16", "1:1"],
-        "resolutions": ["720p", "1080p"],
-        "ref_max": 0, "timeout": 420,
-    },
-    "Vidu Q3 Ref": {
-        "method": "generate_video_vidu", "version": "viduQ3Ref", "cost_base": 30,
-        "cost_duration_scale": {5: 1.0, 10: 2.0, 15: 3.0},
-        "default_duration": 5, "durations": [5, 10, 15], "ratios": ["16:9", "9:16", "1:1"],
-        "resolutions": ["720p", "1080p"],
-        "ref_max": 7, "timeout": 420,
-    },
-    "Vidu Q3 Mix": {
-        "method": "generate_video_vidu", "version": "viduQ3MixRef", "cost_base": 30,
-        "cost_duration_scale": {5: 1.0, 10: 2.0, 15: 3.0},
-        "default_duration": 5, "durations": [5, 10, 15], "ratios": ["16:9", "9:16", "1:1"],
-        "resolutions": ["720p", "1080p"],
-        "ref_max": 7, "timeout": 420,
+        "ref_max": 9, "timeout": 300,
     },
     "Kling 2.6": {
         "method": "generate_video_kling", "version": "2.6", "cost_base": 25,
         "cost_duration_scale": {5: 1.0, 10: 2.0},
         "default_duration": 5, "durations": [5, 10], "ratios": ["16:9", "9:16", "1:1"],
         "resolutions": ["720p", "1080p"],
-        "ref_max": 0, "timeout": 420,
+        "ref_max": 9, "timeout": 420,
     },
     "Kling O1": {
         "method": "generate_video_kling_o1", "version": None, "cost_base": 40,
         "cost_duration_scale": {5: 1.0, 10: 2.0},
         "default_duration": 5, "durations": [5, 10], "ratios": ["16:9", "9:16", "1:1"],
         "resolutions": ["720p", "1080p"],
-        "ref_max": 0, "timeout": 600,
+        "ref_max": 9, "timeout": 600,
     },
     "Hailuo 2.3 Std": {
         "method": "generate_video_hailuo02", "version": "hailuo23standard", "cost_base": 25,
         "cost_duration_scale": {6: 1.0, 10: 1.7},
         "default_duration": 6, "durations": [6, 10], "ratios": ["16:9", "9:16"],
         "resolutions": ["720p", "1080p"],
-        "ref_max": 0, "timeout": 420,
+        "ref_max": 9, "timeout": 420,
     },
     "Hailuo 2.3 Pro": {
         "method": "generate_video_hailuo02", "version": "hailuo23pro", "cost_base": 40,
         "cost_duration_scale": {6: 1.0},
         "default_duration": 6, "durations": [6], "ratios": ["16:9", "9:16"],
         "resolutions": ["720p", "1080p"],
-        "ref_max": 0, "timeout": 420,
+        "ref_max": 9, "timeout": 420,
     },
     "Wan2.7": {
         "method": "generate_video_wan27", "version": None, "cost_base": 25,
         "cost_duration_scale": {5: 1.0, 10: 2.0, 15: 3.0},
-        "default_duration": 5, "durations": [5, 10, 15], "ratios": ["16:9", "9:16", "1:1"],
+        "default_duration": 5, "durations": [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], "ratios": ["16:9", "9:16", "1:1"],
         "resolutions": ["720p", "1080p"],
-        "ref_max": 20, "timeout": 600,
-    },
-    "Wan2.6": {
-        "method": "generate_video_wan26", "version": None, "cost_base": 25,
-        "cost_duration_scale": {5: 1.0, 10: 2.0},
-        "default_duration": 5, "durations": [5, 10], "ratios": ["16:9", "9:16", "1:1"],
-        "resolutions": ["720p", "1080p"],
-        "ref_max": 0, "timeout": 420,
+        "ref_max": 20, "video_ref": True, "timeout": 600,
     },
     "Gemini Omni": {
-        "method": "generate_video_gemini_omni", "version": None, "cost_base": 25,
+        "method": "generate_video_gemini_omni", "version": None, "cost_base": 54,
         "cost_duration_scale": {4: 0.8, 6: 1.2, 8: 1.6, 10: 2.0},
         "default_duration": 6, "durations": [4, 6, 8, 10], "ratios": ["16:9", "9:16"],
         "resolutions": ["720p", "1080p", "4K"],
@@ -220,32 +189,21 @@ VIDEO_MODELS_DIRECT = {
     "Grok Imagine": {
         "method": "generate_video_grok_imagine", "version": None, "cost_base": 24,
         "cost_duration_scale": {6: 1.0, 10: 1.667, 15: 2.5, 20: 3.333, 30: 5.0},
-        "default_duration": 6, "durations": [6, 10, 15, 20, 30], "ratios": ["16:9", "9:16", "1:1", "2:3", "3:2"],
-        "resolutions": ["720p", "1080p"],
+        "default_duration": 6, "durations": [6, 8, 10, 12, 15, 20, 25, 30], "ratios": ["16:9", "9:16", "1:1", "2:3", "3:2"],
+        "resolutions": ["480p", "720p"],
         "ref_max": 1, "timeout": 600,
     },
     "Seedance 1.5 Pro": {
         "method": "generate_video_seedance10_pro", "version": "Seedance1-5Pro", "cost_base": 40,
         "cost_duration_scale": {5: 0.7, 8: 1.0, 10: 1.2, 12: 1.5},
-        "default_duration": 10, "durations": [10, 5, 8, 12], "ratios": ["16:9", "9:16", "1:1"],
+        "default_duration": 10, "durations": [10, 4, 5, 6, 7, 8, 9, 11, 12], "ratios": ["16:9", "9:16", "1:1"],
         "resolutions": ["720p", "1080p"],
-        "ref_max": 0, "timeout": 600,
+        "ref_max": 9, "timeout": 600,
     },
 }
 
-VIDEO_MODELS_AGENT_ONLY = {
-    "Sora2": {"method": "generate_video_sora2", "version": None, "cost_base": 25},
-    "Seedance2.0 fast": {"method": "generate_video_seedance20", "version": "fast", "cost_base": 45},
-    "Seedance2.0 pro": {"method": "generate_video_seedance20", "version": "pro", "cost_base": 55},
-    "Kling 3.0 Std": {"method": "generate_video_kling", "version": "3.0std", "cost_base": 35},
-    "Kling 3.0 Pro": {"method": "generate_video_kling", "version": "3.0pro", "cost_base": 50},
-    "Kling V3 Omni": {"method": "generate_video_kling", "version": "kling-v3-omni", "cost_base": 35},
-}
-
 def get_video_model(name):
-    if name in VIDEO_MODELS_DIRECT:
-        return VIDEO_MODELS_DIRECT[name]
-    return VIDEO_MODELS_AGENT_ONLY.get(name)
+    return VIDEO_MODELS_DIRECT.get(name)
 
 def calc_video_cost(model_name: str, duration: int = 5, resolution: str = "720p") -> int:
     m = get_video_model(model_name)

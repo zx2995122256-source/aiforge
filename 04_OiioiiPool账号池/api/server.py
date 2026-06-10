@@ -9,9 +9,10 @@ from typing import Optional
 from core.db import init_db, TaskDB, AccountDB
 from core.pool import AccountPool
 from core.engine import GenEngine
-from config import (IMAGE_MODELS, VIDEO_MODELS_DIRECT, VIDEO_MODELS_AGENT_ONLY,
+from config import (IMAGE_MODELS, VIDEO_MODELS_DIRECT,
                     API_PORT, API_HOST, BASE_DIR, OUTPUT_DIR, REFS_DIR, LOGS_DIR,
                     VIDEO_MIN_POINTS)
+from core.models_cache import init as init_models_cache, get_models as get_cached_models
 from api.api_db import init_api_tables
 from api.api_routes import router as api_router, set_engine as set_api_engine
 
@@ -47,6 +48,7 @@ def init():
     engine = GenEngine(pool)
     engine.cleanup_stale_tasks()
     set_api_engine(engine)
+    init_models_cache()
 
 
 class ImageRequest(BaseModel):
@@ -65,6 +67,7 @@ class VideoRequest(BaseModel):
     duration: int = 5
     reference_images: list = []
     reference_video: str = ""
+    reference_map: dict = None
 
 
 class AddAccountRequest(BaseModel):
@@ -136,9 +139,12 @@ async def upload_video_reference(file: UploadFile = File(...)):
 
 @app.post("/api/generate_image")
 def generate_image(req: ImageRequest):
-    if req.model not in IMAGE_MODELS:
-        raise HTTPException(400, f"Unknown model. Available: {list(IMAGE_MODELS.keys())}")
-    result = engine.submit("image", req.model, req.prompt, req.ratio, req.resolution,
+    # 不区分大小写+去连字符匹配模型名（兼容 gpt-image-2 ↔ GPT-Image2）
+    model_normalized = req.model.lower().replace("-", "")
+    match = next((k for k in IMAGE_MODELS if k.lower().replace("-", "") == model_normalized), None)
+    if not match:
+        raise HTTPException(400, f"Unknown model: {req.model}. Available: {list(IMAGE_MODELS.keys())}")
+    result = engine.submit("image", match, req.prompt, req.ratio, req.resolution,
                            reference_images=req.reference_images)
     if not result["success"]:
         raise HTTPException(500, result["error"])
@@ -147,15 +153,192 @@ def generate_image(req: ImageRequest):
 
 @app.post("/api/generate_video")
 def generate_video(req: VideoRequest):
-    if req.model not in VIDEO_MODELS_DIRECT:
-        raise HTTPException(400, f"Model not available. Available: {list(VIDEO_MODELS_DIRECT.keys())}")
+    model_normalized = req.model.lower().replace("-", "")
+    match = next((k for k in VIDEO_MODELS_DIRECT if k.lower().replace("-", "") == model_normalized), None)
+    if not match:
+        raise HTTPException(400, f"Model not available: {req.model}. Available: {list(VIDEO_MODELS_DIRECT.keys())}")
     result = engine.submit(
-        "video", req.model, req.prompt, req.ratio, req.resolution, req.duration,
+        "video", match, req.prompt, req.ratio, req.resolution, req.duration,
         reference_images=req.reference_images,
-        reference_video=req.reference_video)
+        reference_video=req.reference_video,
+        reference_map=req.reference_map)
     if not result["success"]:
         raise HTTPException(500, result["error"])
     return {"task_id": result["task_db_id"], "status": "submitted"}
+
+
+class ImageEditRequest(BaseModel):
+    image_url: str  # 用户上传的图片URL
+    generate_type: str  # image_inpaint, image_outpaint, image_relight, remove_bg_comfy
+    prompt: str = ""
+    ratio: str = "1:1"
+    resolution: str = "2K"
+    reference_images: list = []
+
+class ImageEnhanceRequest(BaseModel):
+    image_url: str
+    resolution: str = "4K"
+
+class PromptReverseRequest(BaseModel):
+    image_url: str
+
+
+@app.post("/api/image_edit")
+def image_edit(req: ImageEditRequest):
+    """图片编辑：局部重绘/外扩/重光照/抠图等。"""
+    client = pool.get_available_client()
+    if not client:
+        raise HTTPException(503, "No available account")
+    ok, result = client.image_edit(
+        req.image_url, req.generate_type, req.prompt,
+        req.ratio, req.resolution, req.reference_images)
+    if not ok:
+        raise HTTPException(500, result)
+    return {"task_id": result, "status": "submitted"}
+
+@app.post("/api/image_enhance")
+def image_enhance(req: ImageEnhanceRequest):
+    """图片高清化。"""
+    client = pool.get_available_client()
+    if not client:
+        raise HTTPException(503, "No available account")
+    ok, result = client.image_enhance(req.image_url, req.resolution)
+    if not ok:
+        raise HTTPException(500, result)
+    return {"task_id": result, "status": "submitted"}
+
+@app.post("/api/prompt_reverse")
+def prompt_reverse(req: PromptReverseRequest):
+    """提示词反推。"""
+    client = pool.get_available_client()
+    if not client:
+        raise HTTPException(503, "No available account")
+    ok, result = client.prompt_reverse(req.image_url)
+    if not ok:
+        raise HTTPException(500, result)
+    return {"task_id": result, "status": "submitted"}
+
+
+class VideoCombineRequest(BaseModel):
+    video_urls: list  # 视频URL列表
+    output_name: str = "combined"
+
+class VideoTrimRequest(BaseModel):
+    video_url: str
+    trim_start_ms: int  # 起始毫秒
+    trim_end_ms: int    # 结束毫秒
+
+class VideoSubtitleEraseRequest(BaseModel):
+    video_url: str
+
+class VideoEnhanceRequest(BaseModel):
+    video_url: str
+    resolution: str = "1080p"
+
+
+@app.post("/api/video_combine")
+def video_combine(req: VideoCombineRequest):
+    """视频合并。"""
+    client = pool.get_available_client()
+    if not client:
+        raise HTTPException(503, "No available account")
+    ok, result = client.video_combine(req.video_urls, req.output_name)
+    if not ok:
+        raise HTTPException(500, result)
+    return {"task_id": result, "status": "submitted"}
+
+@app.post("/api/video_trim")
+def video_trim(req: VideoTrimRequest):
+    """视频裁剪。"""
+    client = pool.get_available_client()
+    if not client:
+        raise HTTPException(503, "No available account")
+    ok, result = client.video_trim(req.video_url, req.trim_start_ms, req.trim_end_ms)
+    if not ok:
+        raise HTTPException(500, result)
+    return {"task_id": result, "status": "submitted"}
+
+@app.post("/api/video_subtitle_erase")
+def video_subtitle_erase(req: VideoSubtitleEraseRequest):
+    """视频字幕擦除。"""
+    client = pool.get_available_client()
+    if not client:
+        raise HTTPException(503, "No available account")
+    ok, result = client.video_subtitle_erase(req.video_url)
+    if not ok:
+        raise HTTPException(500, result)
+    return {"task_id": result, "status": "submitted"}
+
+@app.post("/api/video_enhance")
+def video_enhance(req: VideoEnhanceRequest):
+    """视频增强/高清化。"""
+    client = pool.get_available_client()
+    if not client:
+        raise HTTPException(503, "No available account")
+    ok, result = client.video_enhance(req.video_url, req.resolution)
+    if not ok:
+        raise HTTPException(500, result)
+    return {"task_id": result, "status": "submitted"}
+
+
+class PollEditTaskRequest(BaseModel):
+    task_id: str       # oiioii.ai返回的编辑任务ID（字符串格式）
+    task_type: str = "image"  # image 或 video
+    account_id: int = 0  # 提交时使用的账号ID（可选，用于复用client）
+
+
+@app.post("/api/poll_edit_task")
+def poll_edit_task(req: PollEditTaskRequest):
+    """轮询编辑任务状态（图片编辑/视频编辑等）。
+    
+    编辑任务的task_id是字符串格式（如image_edit_xxx），不在TaskDB中，
+    需要通过OiioiiClient直接查询oiioii.ai的async_tasks接口。
+    """
+    client = pool.get_available_client(min_points=0)
+    if not client:
+        raise HTTPException(503, "No available account")
+
+    try:
+        # 用check_result_once查询oiioii.ai的async_tasks
+        asset_type = "image" if req.task_type == "image" else "video"
+        status, uri = client.check_result_once(
+            asset_type, set(), remote_task_id=req.task_id)
+
+        if status == "completed" and uri:
+            # 下载结果到本地
+            ok_dl, local_path = client.download(uri)
+            return {
+                "status": "completed",
+                "uri": uri,
+                "local_path": local_path if ok_dl else "",
+            }
+        elif status == "failed":
+            return {"status": "failed", "error": uri}
+        else:
+            return {"status": "pending"}
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+
+class MusicGenRequest(BaseModel):
+    prompt: str
+    style: str = ""
+    duration: int = 0
+    instrumental: bool = False
+
+
+@app.post("/api/generate_music")
+def generate_music(req: MusicGenRequest):
+    """音乐生成（Suno）。"""
+    client = pool.get_available_client()
+    if not client:
+        raise HTTPException(503, "No available account")
+    ok, result = client.generate_music(req.prompt, req.style, req.duration, req.instrumental)
+    if not ok:
+        if result == "INSUFFICIENT_POINTS":
+            raise HTTPException(402, "Insufficient points")
+        raise HTTPException(500, result)
+    return {"task_id": result, "status": "submitted"}
 
 
 @app.get("/api/task/{task_id}")
@@ -205,6 +388,47 @@ def retry_task(task_id: int):
     if not result["success"]:
         raise HTTPException(500, result["error"])
     return {"task_id": result["task_db_id"], "status": "submitted"}
+
+
+@app.delete("/api/task/{task_id}")
+def delete_task(task_id: int):
+    """删除任务记录及磁盘文件"""
+    task = TaskDB.get_by_id(task_id)
+    if not task:
+        raise HTTPException(404, "Task not found")
+    # 删除磁盘文件
+    local_path = task.get("local_path", "")
+    if local_path and os.path.isfile(local_path):
+        try:
+            os.remove(local_path)
+        except Exception:
+            pass
+    # 删除数据库记录
+    TaskDB.delete(task_id)
+    return {"success": True}
+
+
+@app.post("/api/tasks/batch_delete")
+def batch_delete_tasks(req: dict):
+    """批量删除任务记录及磁盘文件"""
+    ids = req.get("ids", [])
+    deleted = 0
+    for tid in ids:
+        try:
+            tid = int(tid)
+            task = TaskDB.get_by_id(tid)
+            if task:
+                local_path = task.get("local_path", "")
+                if local_path and os.path.isfile(local_path):
+                    try:
+                        os.remove(local_path)
+                    except Exception:
+                        pass
+                TaskDB.delete(tid)
+                deleted += 1
+        except (ValueError, TypeError):
+            pass
+    return {"success": True, "deleted": deleted}
 
 
 @app.get("/api/pool/status")
@@ -313,26 +537,10 @@ def sync_points():
 
 @app.get("/api/models")
 def list_models():
-    video_all = {}
-    for k, v in VIDEO_MODELS_DIRECT.items():
-        video_all[k] = {"method": v["method"], "cost_base": v["cost_base"],
-                        "cost_duration_scale": v.get("cost_duration_scale", {}),
-                        "default_duration": v["default_duration"],
-                        "durations": v["durations"],
-                        "ratios": v["ratios"],
-                        "resolutions": v.get("resolutions", ["720p", "1080p"]),
-                        "ref_max": v["ref_max"],
-                        "video_ref": v.get("video_ref", False)}
-    for k, v in VIDEO_MODELS_AGENT_ONLY.items():
-        video_all[k] = {"method": v["method"], "cost_base": v["cost_base"],
-                        "agent_only": True}
+    cache = get_cached_models()
     return {
-        "image": {k: {"method": v["method"], "cost_base": v["cost_base"],
-                      "ratios": v.get("ratios", ["1:1", "16:9", "9:16"]),
-                      "resolutions": v.get("resolutions", ["1K", "2K"]),
-                      "ref_max": v.get("ref_max", 0)}
-                  for k, v in IMAGE_MODELS.items()},
-        "video": video_all,
+        "image": cache.get("image", {}),
+        "video": cache.get("video", {}),
         "video_min_points": VIDEO_MIN_POINTS,
     }
 

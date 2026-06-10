@@ -12,15 +12,31 @@ from core.db import AccountDB
 class AccountPool:
     def __init__(self):
         self._clients: dict[int, OiioiiClient] = {}
+        self._max_cached_clients = 30  # 最多缓存30个client，避免内存膨胀
 
     def _get_client(self, account_id: int, email: str, password: str,
                     token: str = "", workspace_id: str = "") -> OiioiiClient:
         if account_id not in self._clients:
+            # 如果缓存满了，清理最久未用的
+            if len(self._clients) >= self._max_cached_clients:
+                self._evict_clients()
             self._clients[account_id] = OiioiiClient(
                 email=email, password=password, token=token,
                 workspace_id=workspace_id, account_id=account_id
             )
         return self._clients[account_id]
+
+    def _evict_clients(self):
+        """清理一半的缓存client，释放Session连接"""
+        evict_count = len(self._clients) // 2
+        to_remove = list(self._clients.keys())[:evict_count]
+        for aid in to_remove:
+            client = self._clients.pop(aid, None)
+            if client and hasattr(client, '_session'):
+                try:
+                    client._session.close()
+                except Exception:
+                    pass
 
     def add_account(self, email: str, password: str) -> dict:
         client = OiioiiClient(email=email, password=password)
@@ -113,6 +129,8 @@ class AccountPool:
         failed = 0
         skipped = 0
         reactivated = 0
+        synced = 0
+        now_ts = time.time()
         for acc in accounts:
             if acc.get("status") not in ("active", "exhausted"):
                 skipped += 1
@@ -122,25 +140,31 @@ class AccountPool:
                 acc.get("token", ""), acc.get("workspace_id", "")
             )
             result = client.daily_claim()
+            # 签到后同步实际积分到DB
+            actual_pts = client.get_points()
+            if actual_pts >= 0:
+                AccountDB.update_points_with_sync(acc["id"], actual_pts, now_ts)
+                synced += 1
+                # 根据实际积分更新状态
+                if actual_pts < 10 and acc.get("status") == "active":
+                    AccountDB.update_status(acc["id"], "exhausted")
+                elif actual_pts >= 30 and acc.get("status") == "exhausted":
+                    AccountDB.update_status(acc["id"], "active")
+                if actual_pts >= DAILY_CLAIM_MIN_POINTS and acc.get("video_used") == 1:
+                    AccountDB.reset_video_used(acc["id"])
+                    reactivated += 1
             if result.get("success"):
                 added = result.get("added", 0)
                 if added > 0:
                     claimed += 1
-                    new_total = result.get("total", 0)
-                    AccountDB.update_points(acc["id"], new_total)
-                    if new_total >= DAILY_CLAIM_MIN_POINTS and acc.get("video_used") == 1:
-                        AccountDB.reset_video_used(acc["id"])
-                        reactivated += 1
-                    if acc.get("status") == "exhausted" and new_total >= 30:
-                        AccountDB.update_status(acc["id"], "active")
                 else:
                     skipped += 1
             else:
                 failed += 1
                 print(f"[Pool] daily_claim #{acc['id']} failed: {result.get('error','')[:50]}")
             time.sleep(0.5)
-        print(f"[Pool] daily_claim_all: claimed={claimed} reactivated={reactivated} skipped={skipped} failed={failed}")
-        return {"claimed": claimed, "reactivated": reactivated, "skipped": skipped, "failed": failed}
+        print(f"[Pool] daily_claim_all: claimed={claimed} synced={synced} reactivated={reactivated} skipped={skipped} failed={failed}")
+        return {"claimed": claimed, "synced": synced, "reactivated": reactivated, "skipped": skipped, "failed": failed}
 
     def auto_register(self) -> dict:
         from core.registrar import auto_register_sync
