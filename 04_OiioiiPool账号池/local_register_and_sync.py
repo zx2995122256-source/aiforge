@@ -32,7 +32,7 @@ def push_account_to_server(email: str, password: str) -> bool:
     import requests
     try:
         r = requests.post(
-            f"{SERVER_URL}/api/pool/add",
+            f"{SERVER_URL}/pool/api/pool/add",
             json={"email": email, "password": password},
             timeout=30,
         )
